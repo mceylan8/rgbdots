@@ -138,6 +138,7 @@ export function Controls({ options, onChange, onReset, onSavePng }: Props) {
         <Toggle label="Original colors" value={options.useColor} onChange={(v) => set('useColor', v)} />
         <Toggle label="Flicker" value={options.flicker} onChange={(v) => set('flicker', v)} />
         <Toggle label="Spin split" value={options.spin} onChange={(v) => set('spin', v)} />
+        <Toggle label="CRT" value={options.crt} onChange={(v) => set('crt', v)} />
         <button
           type="button"
           onClick={onReset}

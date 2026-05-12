@@ -9,6 +9,7 @@ export interface RgbDotOptions {
   useColor: boolean
   flicker: boolean
   spin: boolean
+  crt: boolean
   threshold: number
   shape: RgbDotShape
   preset: RgbDotPreset
@@ -272,6 +273,22 @@ function updateDotMotion(
   }
 }
 
+function drawCrtOverlay(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'
+  for (let y = 0; y < h; y += 2) {
+    ctx.fillRect(0, y, w, 1)
+  }
+
+  const cx = w / 2
+  const cy = h / 2
+  const outer = Math.hypot(w / 2, h / 2) * 1.08
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, outer)
+  g.addColorStop(0, 'rgba(0,0,0,0)')
+  g.addColorStop(1, 'rgba(0,0,0,0.5)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, w, h)
+}
+
 function dotDrawPosition(data: Float32Array, base: number, now: number, ox: number, oy: number) {
   const rx = data[base + I_RX]
   const ry = data[base + I_RY]
@@ -308,7 +325,7 @@ export function useRgbDot(options: RgbDotOptions) {
     if (!ctx) return
 
     const { data, count, w, h } = dots
-    const { split, flicker, grid, shape } = optRef.current
+    const { split, flicker, grid, shape, crt } = optRef.current
     const DOTR = grid * 0.34
     const a = angleRef.current
     const now = performance.now()
@@ -384,6 +401,10 @@ export function useRgbDot(options: RgbDotOptions) {
           ctx.fill()
         }
       }
+    }
+
+    if (crt) {
+      drawCrtOverlay(ctx, w, h)
     }
   }, [])
 

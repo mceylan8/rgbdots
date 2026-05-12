@@ -10,6 +10,7 @@ const DEFAULT: RgbDotOptions = {
   useColor: true,
   flicker: true,
   spin: true,
+  crt: false,
   threshold: 10,
   shape: 'circle',
   preset: 'rgb',
