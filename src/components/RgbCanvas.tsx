@@ -2,19 +2,24 @@ import { useEffect, useRef } from 'react'
 import { useRgbDot, RgbDotOptions } from '../hooks/useRgbDot'
 
 interface Props {
-  src: string
+  src: string | null
+  imageData: ImageData | null
   options: RgbDotOptions
   onSaveReady?: (save: () => void) => void
 }
 
-export function RgbCanvas({ src, options, onSaveReady }: Props) {
-  const { canvasRef, loadImage, saveAsPng } = useRgbDot(options)
+export function RgbCanvas({ src, imageData, options, onSaveReady }: Props) {
+  const { canvasRef, loadImage, loadImageData, saveAsPng } = useRgbDot(options)
   const saveReadyRef = useRef(onSaveReady)
   saveReadyRef.current = onSaveReady
 
   useEffect(() => {
-    loadImage(src)
-  }, [src, loadImage])
+    if (imageData) {
+      loadImageData(imageData)
+      return
+    }
+    if (src) loadImage(src)
+  }, [src, imageData, loadImage, loadImageData])
 
   useEffect(() => {
     saveReadyRef.current?.(saveAsPng)

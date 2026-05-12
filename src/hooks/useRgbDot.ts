@@ -515,6 +515,24 @@ export function useRgbDot(options: RgbDotOptions) {
     img.src = src
   }, [])
 
+  const loadImageData = useCallback((imgData: ImageData) => {
+    imgDataRef.current = imgData
+    const cv = canvasRef.current
+    if (cv) {
+      cv.width = imgData.width
+      cv.height = imgData.height
+    }
+    dotsRef.current = sampleDots(
+      imgData,
+      optRef.current.grid,
+      optRef.current.useColor,
+      optRef.current.threshold,
+      optRef.current.preset,
+    )
+    revealStartRef.current = performance.now()
+    revealProgressRef.current = 0
+  }, [])
+
   useEffect(() => {
     const imgData = imgDataRef.current
     if (!imgData) return
@@ -532,5 +550,5 @@ export function useRgbDot(options: RgbDotOptions) {
     a.remove()
   }, [])
 
-  return { canvasRef, loadImage, saveAsPng }
+  return { canvasRef, loadImage, loadImageData, saveAsPng }
 }

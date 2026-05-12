@@ -1,20 +1,27 @@
 import { useEffect, useRef } from 'react'
-import { useHalftone, HalftoneOptions } from '../hooks/useHalftone'
+import { useFlowField, FlowOptions } from '../hooks/useFlowField'
 
 interface Props {
   imageData: ImageData
-  options: HalftoneOptions
+  options: FlowOptions
   onSaveReady?: (save: () => void) => void
+  onResetReady?: (reset: () => void) => void
 }
 
-export function HalftoneCanvas({ imageData, options, onSaveReady }: Props) {
-  const { canvasRef, saveAsPng } = useHalftone(imageData, options)
+export function FlowCanvas({ imageData, options, onSaveReady, onResetReady }: Props) {
+  const { canvasRef, reset, saveAsPng } = useFlowField(imageData, options)
   const saveReadyRef = useRef(onSaveReady)
   saveReadyRef.current = onSaveReady
+  const resetReadyRef = useRef(onResetReady)
+  resetReadyRef.current = onResetReady
 
   useEffect(() => {
     saveReadyRef.current?.(saveAsPng)
   }, [saveAsPng])
+
+  useEffect(() => {
+    resetReadyRef.current?.(reset)
+  }, [reset])
 
   return (
     <canvas
