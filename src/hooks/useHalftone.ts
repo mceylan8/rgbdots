@@ -2,9 +2,14 @@ import { useRef, useEffect, useCallback } from 'react'
 
 export interface HalftoneOptions {
   gridSize: number
+  /** Per-cell contrast on luminance before dot radius (0.5–3). */
   contrast: number
   angleDeg: number
   dotScale: number
+  /** Minimum dot radius factor 0–0.5; bright areas still get larger dots. */
+  minDot: number
+  /** When true, large dots in bright areas (after contrast). */
+  invert: boolean
   paperColor: string
   inkColor: string
   title: string
@@ -19,9 +24,11 @@ export interface HalftoneOptions {
 
 export const DEFAULT_HALFTONE: HalftoneOptions = {
   gridSize: 10,
-  contrast: 1.25,
+  contrast: 1.4,
   angleDeg: 12,
   dotScale: 1,
+  minDot: 0.18,
+  invert: false,
   paperColor: '#e8dcc8',
   inkColor: '#1a0a06',
   textColor: '#1a0a06',
@@ -38,24 +45,23 @@ function clamp255(v: number) {
   return v < 0 ? 0 : v > 255 ? 255 : v
 }
 
-function buildLumaMap(img: ImageData, contrast: number): Uint8ClampedArray {
+/** Raw luminance 0–255 per pixel (no contrast baked in). */
+function buildRawLuma(img: ImageData): Uint8ClampedArray {
   const { width: w, height: h, data: d } = img
   const lum = new Uint8ClampedArray(w * h)
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const p = (y * w + x) * 4
-      let v = 0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2]
-      v = (v - 128) * contrast + 128
-      lum[y * w + x] = clamp255(v)
+      lum[y * w + x] = clamp255(0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2])
     }
   }
   return lum
 }
 
-function sampleLum(lum: Uint8ClampedArray, w: number, h: number, x: number, y: number) {
+function sampleBrightness(lum: Uint8ClampedArray, w: number, h: number, x: number, y: number) {
   const xi = Math.floor(Math.max(0, Math.min(w - 1, x)))
   const yi = Math.floor(Math.max(0, Math.min(h - 1, y)))
-  return lum[yi * w + xi] / 255
+  return lum[yi * w + xi]
 }
 
 let noiseTile: HTMLCanvasElement | null = null
@@ -102,7 +108,7 @@ export function useHalftone(imageData: ImageData | null, options: HalftoneOption
       cv.width = iw
       cv.height = ih
 
-      const lum = buildLumaMap(imageData, o.contrast)
+      const rawLum = buildRawLuma(imageData)
       const ctx = cv.getContext('2d')
       if (!ctx) return
 
@@ -114,8 +120,10 @@ export function useHalftone(imageData: ImageData | null, options: HalftoneOption
       const cy = ih / 2
       const rad = (o.angleDeg * Math.PI) / 180
       const step = Math.max(3, o.gridSize)
-      const maxR = (step / 2) * 0.95 * o.dotScale
+      const cellHalf = step / 2
       const diag = Math.ceil(Math.hypot(iw, ih) + step * 3)
+      const MIN_DOT = Math.max(0, Math.min(0.5, o.minDot))
+      const contrast = o.contrast
 
       ctx.save()
       ctx.translate(cx, cy)
@@ -128,11 +136,18 @@ export function useHalftone(imageData: ImageData | null, options: HalftoneOption
           const wx = cx + lx * Math.cos(rad) - ly * Math.sin(rad)
           const wy = cy + lx * Math.sin(rad) + ly * Math.cos(rad)
           if (wx < 0 || wx >= iw || wy < 0 || wy >= ih) continue
-          const L = sampleLum(lum, iw, ih, wx, wy)
-          const r = maxR * (1 - L)
-          if (r < 0.2) continue
-          ctx.moveTo(lx + r, ly)
-          ctx.arc(lx, ly, r, 0, Math.PI * 2)
+
+          const brightness = sampleBrightness(rawLum, iw, ih, wx, wy)
+          let b = (brightness - 128) * contrast + 128
+          b = Math.max(0, Math.min(255, b))
+          if (o.invert) b = 255 - b
+
+          const t = b / 255
+          const radius = (MIN_DOT + (1 - MIN_DOT) * t) * cellHalf * o.dotScale
+          if (radius < 0.08) continue
+
+          ctx.moveTo(lx + radius, ly)
+          ctx.arc(lx, ly, radius, 0, Math.PI * 2)
         }
       }
       ctx.fill()

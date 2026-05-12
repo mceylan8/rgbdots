@@ -152,7 +152,8 @@ export function Controls({
       {halftonePoster ? (
         <div className="flex flex-col gap-3">
           <Slider label="Grid px" min={4} max={18} value={halftone.gridSize} onChange={(v) => setHt('gridSize', v)} />
-          <Slider label="Contrast" min={0.8} max={2.2} step={0.05} value={halftone.contrast} onChange={(v) => setHt('contrast', v)} />
+          <Slider label="Contrast" min={0.5} max={3} step={0.1} value={halftone.contrast} onChange={(v) => setHt('contrast', v)} />
+          <Slider label="Min dot" min={0} max={0.5} step={0.01} value={halftone.minDot} onChange={(v) => setHt('minDot', v)} />
           <Slider label="Angle °" min={-45} max={45} value={halftone.angleDeg} onChange={(v) => setHt('angleDeg', v)} />
           <Slider label="Dot scale" min={0.5} max={1.4} step={0.05} value={halftone.dotScale} onChange={(v) => setHt('dotScale', v)} />
           <Slider label="Title px" min={28} max={80} value={halftone.titleSize} onChange={(v) => setHt('titleSize', v)} />
@@ -160,10 +161,100 @@ export function Controls({
           <Slider label="Date px" min={10} max={24} value={halftone.dateSize} onChange={(v) => setHt('dateSize', v)} />
           <Slider label="Noise" min={0} max={0.12} step={0.005} value={halftone.noiseOpacity} onChange={(v) => setHt('noiseOpacity', v)} />
 
+          <div className="flex flex-wrap gap-4 pt-1 border-t border-white/10">
+            <Toggle label="Invert dots" value={halftone.invert} onChange={(v) => setHt('invert', v)} />
+          </div>
+
           <div className="flex flex-wrap gap-4 pt-1">
             <ColorSwatch label="Paper" value={halftone.paperColor} onChange={(v) => setHt('paperColor', v)} />
             <ColorSwatch label="Ink" value={halftone.inkColor} onChange={(v) => setHt('inkColor', v)} />
             <ColorSwatch label="Text" value={halftone.textColor} onChange={(v) => setHt('textColor', v)} />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+            <span className="text-white/30 w-full shrink-0 text-[10px] uppercase tracking-wide">Print styles</span>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                title="Manga"
+                onClick={() =>
+                  onHalftoneChange({
+                    ...halftone,
+                    paperColor: '#000000',
+                    inkColor: '#f5e642',
+                    textColor: '#f5e642',
+                    invert: true,
+                  })
+                }
+                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+              >
+                Manga
+              </button>
+              <button
+                type="button"
+                title="Risograph"
+                onClick={() =>
+                  onHalftoneChange({
+                    ...halftone,
+                    paperColor: '#1a0a2e',
+                    inkColor: '#ff6b35',
+                    textColor: '#ff6b35',
+                    invert: false,
+                  })
+                }
+                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+              >
+                Riso
+              </button>
+              <button
+                type="button"
+                title="Soviet"
+                onClick={() =>
+                  onHalftoneChange({
+                    ...halftone,
+                    paperColor: '#cc0000',
+                    inkColor: '#f5f0e8',
+                    textColor: '#f5f0e8',
+                    invert: false,
+                  })
+                }
+                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+              >
+                Soviet
+              </button>
+              <button
+                type="button"
+                title="Zine"
+                onClick={() =>
+                  onHalftoneChange({
+                    ...halftone,
+                    paperColor: '#f0e6d3',
+                    inkColor: '#1a1a2e',
+                    textColor: '#1a1a2e',
+                    invert: false,
+                  })
+                }
+                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+              >
+                Zine
+              </button>
+              <button
+                type="button"
+                title="Ghost"
+                onClick={() =>
+                  onHalftoneChange({
+                    ...halftone,
+                    paperColor: '#e8e8e8',
+                    inkColor: '#1a1a1a',
+                    textColor: '#1a1a1a',
+                    invert: false,
+                  })
+                }
+                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+              >
+                Ghost
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -196,8 +287,10 @@ export function Controls({
                   paperColor: '#e8dcc8',
                   inkColor: '#1a0a06',
                   textColor: '#1a0a06',
-                  contrast: 1.25,
+                  contrast: 1.4,
                   angleDeg: 12,
+                  minDot: 0.18,
+                  invert: false,
                 })
               }
               className="px-2 py-1 border border-white/10 text-white/50 hover:text-white/80 hover:border-white/25 text-[10px] uppercase tracking-wide"
