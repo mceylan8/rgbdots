@@ -26,8 +26,8 @@ function Slider({
   onChange: (v: number) => void
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-white/40 text-xs w-28 shrink-0">{label}</span>
+    <div className="flex min-h-[44px] items-center gap-2 sm:gap-3">
+      <span className="w-24 shrink-0 text-[11px] text-white/45 sm:w-28 sm:text-xs">{label}</span>
       <input
         type="range"
         min={min}
@@ -35,9 +35,9 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="flex-1 accent-white h-0.5 bg-white/20 rounded cursor-pointer"
+        className="h-2.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-white sm:h-0.5"
       />
-      <span className="text-white/60 text-xs w-10 text-right tabular-nums shrink-0">
+      <span className="w-11 shrink-0 text-right text-[11px] tabular-nums text-white/55 sm:w-10 sm:text-xs">
         {step < 1 ? value.toFixed(2) : value}
       </span>
     </div>
@@ -54,22 +54,22 @@ function Toggle({
   onChange: (v: boolean) => void
 }) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer select-none">
+    <label className="flex min-h-[44px] cursor-pointer select-none items-center gap-2 py-0.5 sm:min-h-0 sm:py-0">
       <div
         onClick={() => onChange(!value)}
         className={[
-          'w-8 h-4 rounded-full transition-colors relative',
+          'relative h-8 w-9 shrink-0 rounded-full transition-colors sm:h-4 sm:w-8',
           value ? 'bg-white/70' : 'bg-white/20',
         ].join(' ')}
       >
         <div
           className={[
-            'absolute top-0.5 w-3 h-3 rounded-full bg-black transition-transform',
-            value ? 'translate-x-4' : 'translate-x-0.5',
+            'absolute top-1 h-3.5 w-3.5 rounded-full bg-black transition-transform sm:top-0.5 sm:h-3 sm:w-3',
+            value ? 'translate-x-[1.125rem] sm:translate-x-4' : 'translate-x-1 sm:translate-x-0.5',
           ].join(' ')}
         />
       </div>
-      <span className="text-white/50 text-xs">{label}</span>
+      <span className="text-[11px] text-white/50 sm:text-xs">{label}</span>
     </label>
   )
 }
@@ -85,12 +85,12 @@ function ColorSwatch({
 }) {
   const ref = useRef<HTMLInputElement>(null)
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-white/40 text-xs w-14 shrink-0">{label}</span>
+    <div className="flex min-h-[44px] items-center gap-3">
+      <span className="w-14 shrink-0 text-[11px] text-white/45 sm:text-xs">{label}</span>
       <button
         type="button"
         aria-label={label}
-        className="w-7 h-7 shrink-0 border border-white/20 cursor-pointer"
+        className="h-11 w-11 shrink-0 border border-white/25 active:scale-95 sm:h-7 sm:w-7"
         style={{ backgroundColor: value }}
         onClick={() => ref.current?.click()}
       />
@@ -112,7 +112,7 @@ export function FlowControls({ options, onChange, onReset, onSavePng, onResetPar
   }
 
   return (
-    <div className="w-full max-w-xl bg-black border border-white/10 rounded-xl p-4 flex flex-col gap-4 text-xs font-mono">
+    <div className="flex w-full max-w-xl touch-manipulation flex-col gap-4 bg-transparent p-4 pb-5 font-mono text-[13px] sm:text-xs sm:rounded-xl sm:border sm:border-white/10 sm:bg-black sm:p-4 sm:pb-4">
       <div className="flex flex-col gap-3">
         <Slider label="Particles" min={500} max={8000} step={100} value={options.count} onChange={(v) => set('count', v)} />
         <Slider label="Speed" min={0.1} max={3} step={0.05} value={options.speed} onChange={(v) => set('speed', v)} />
@@ -134,7 +134,7 @@ export function FlowControls({ options, onChange, onReset, onSavePng, onResetPar
             type="button"
             title={p.label}
             onClick={() => onChange({ ...options, bgColor: p.bg, particleColor: p.fg })}
-            className="w-7 h-7 border border-white/20 hover:border-white/40 transition-colors"
+            className="h-11 w-11 shrink-0 border border-white/20 transition-colors active:scale-95 sm:h-7 sm:w-7"
             style={{ background: `linear-gradient(135deg, ${p.bg} 50%, ${p.fg} 50%)` }}
           />
         ))}
@@ -149,18 +149,22 @@ export function FlowControls({ options, onChange, onReset, onSavePng, onResetPar
         <button
           type="button"
           onClick={onResetParticles}
-          className="px-3 py-1 border border-white/10 text-white/60 hover:text-white/90 hover:border-white/25"
+          className="min-h-11 min-w-[5.5rem] rounded border border-white/15 px-4 text-[12px] text-white/70 transition-colors active:bg-white/10 hover:border-white/30 hover:text-white sm:min-h-0 sm:min-w-0 sm:px-3 sm:py-1 sm:text-xs"
         >
           Reset
         </button>
         <button
           type="button"
           onClick={onSavePng}
-          className="px-3 py-1 border border-white/10 text-white/60 hover:text-white/90 hover:border-white/25"
+          className="min-h-11 min-w-[5.5rem] rounded border border-white/15 px-4 text-[12px] text-white/70 transition-colors active:bg-white/10 hover:border-white/30 hover:text-white sm:min-h-0 sm:min-w-0 sm:px-3 sm:py-1 sm:text-xs"
         >
           Save PNG
         </button>
-        <button type="button" onClick={onReset} className="ml-auto text-white/30 hover:text-white/60 transition-colors">
+        <button
+          type="button"
+          onClick={onReset}
+          className="ml-auto flex min-h-11 items-center text-[12px] text-white/35 transition-colors active:text-white/50 hover:text-white/60 sm:min-h-0 sm:text-xs"
+        >
           ← new image
         </button>
       </div>

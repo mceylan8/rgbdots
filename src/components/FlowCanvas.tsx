@@ -26,7 +26,7 @@ export function FlowCanvas({ imageData, options, onSaveReady, onResetReady }: Pr
   return (
     <canvas
       ref={canvasRef}
-      className="w-full max-w-lg bg-black border border-white/10"
+      className="mx-auto block h-auto w-full max-h-[min(50dvh,560px)] max-w-full rounded-lg border border-white/10 bg-black sm:max-h-[min(68dvh,800px)] sm:max-w-lg sm:rounded-xl"
       style={{ imageRendering: 'auto' }}
     />
   )

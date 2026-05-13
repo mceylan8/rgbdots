@@ -29,8 +29,8 @@ function Slider({
   onChange: (v: number) => void
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-white/40 text-xs w-24 shrink-0">{label}</span>
+    <div className="flex min-h-[44px] items-center gap-2 sm:gap-3">
+      <span className="w-20 shrink-0 text-[11px] text-white/45 sm:w-24 sm:text-xs">{label}</span>
       <input
         type="range"
         min={min}
@@ -38,9 +38,11 @@ function Slider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="flex-1 accent-white h-0.5 bg-white/20 rounded cursor-pointer"
+        className="h-2.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-white sm:h-0.5"
       />
-      <span className="text-white/60 text-xs w-8 text-right tabular-nums">{value}</span>
+      <span className="w-9 shrink-0 text-right text-[11px] tabular-nums text-white/55 sm:w-8 sm:text-xs">
+        {step < 1 ? Number(value).toFixed(2) : value}
+      </span>
     </div>
   )
 }
@@ -55,22 +57,22 @@ function Toggle({
   onChange: (v: boolean) => void
 }) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer select-none">
+    <label className="flex min-h-[44px] cursor-pointer select-none items-center gap-2 py-0.5 sm:min-h-0 sm:py-0">
       <div
         onClick={() => onChange(!value)}
         className={[
-          'w-8 h-4 rounded-full transition-colors relative',
+          'relative h-8 w-9 shrink-0 rounded-full transition-colors sm:h-4 sm:w-8',
           value ? 'bg-white/70' : 'bg-white/20',
         ].join(' ')}
       >
         <div
           className={[
-            'absolute top-0.5 w-3 h-3 rounded-full bg-black transition-transform',
-            value ? 'translate-x-4' : 'translate-x-0.5',
+            'absolute top-1 h-3.5 w-3.5 rounded-full bg-black transition-transform sm:top-0.5 sm:h-3 sm:w-3',
+            value ? 'translate-x-[1.125rem] sm:translate-x-4' : 'translate-x-1 sm:translate-x-0.5',
           ].join(' ')}
         />
       </div>
-      <span className="text-white/50 text-xs">{label}</span>
+      <span className="text-[11px] text-white/50 sm:text-xs">{label}</span>
     </label>
   )
 }
@@ -86,12 +88,12 @@ function ColorSwatch({
 }) {
   const ref = useRef<HTMLInputElement>(null)
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-white/40 text-xs w-20 shrink-0">{label}</span>
+    <div className="flex min-h-[44px] items-center gap-3">
+      <span className="w-20 shrink-0 text-[11px] text-white/45 sm:text-xs">{label}</span>
       <button
         type="button"
         aria-label={`${label} wählen`}
-        className="w-7 h-7 shrink-0 border border-white/20 cursor-pointer"
+        className="h-11 w-11 shrink-0 border border-white/25 active:scale-95 sm:h-7 sm:w-7"
         style={{ backgroundColor: value }}
         onClick={() => ref.current?.click()}
       />
@@ -137,13 +139,13 @@ export function Controls({
   }
 
   return (
-    <div className="w-full max-w-xl bg-black border border-white/10 rounded-xl p-4 flex flex-col gap-4 text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-3">
+    <div className="flex w-full max-w-xl touch-manipulation flex-col gap-4 bg-transparent p-4 pb-5 text-[13px] sm:text-xs sm:rounded-xl sm:border sm:border-white/10 sm:bg-black sm:p-4 sm:pb-4">
+      <div className="flex flex-col gap-3 border-b border-white/10 pb-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <Toggle label="Halftone poster" value={halftonePoster} onChange={onHalftonePoster} />
         <button
           type="button"
           onClick={onSavePng}
-          className="px-3 py-1 rounded border border-white/10 text-white/60 hover:text-white/90 hover:border-white/25 transition-colors"
+          className="min-h-11 w-full rounded border border-white/15 px-4 text-[12px] text-white/70 transition-colors active:bg-white/10 hover:border-white/30 hover:text-white sm:min-h-0 sm:w-auto sm:px-3 sm:py-1.5 sm:text-xs"
         >
           Save PNG
         </button>
@@ -186,7 +188,7 @@ export function Controls({
                     invert: true,
                   })
                 }
-                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+                className="min-h-10 rounded border border-white/10 px-3 py-2 text-[11px] text-white/55 transition-colors active:bg-white/10 hover:border-white/25 hover:text-white/90 sm:min-h-0 sm:px-2 sm:py-1 sm:text-[10px]"
               >
                 Manga
               </button>
@@ -202,7 +204,7 @@ export function Controls({
                     invert: false,
                   })
                 }
-                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+                className="min-h-10 rounded border border-white/10 px-3 py-2 text-[11px] text-white/55 transition-colors active:bg-white/10 hover:border-white/25 hover:text-white/90 sm:min-h-0 sm:px-2 sm:py-1 sm:text-[10px]"
               >
                 Riso
               </button>
@@ -218,7 +220,7 @@ export function Controls({
                     invert: false,
                   })
                 }
-                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+                className="min-h-10 rounded border border-white/10 px-3 py-2 text-[11px] text-white/55 transition-colors active:bg-white/10 hover:border-white/25 hover:text-white/90 sm:min-h-0 sm:px-2 sm:py-1 sm:text-[10px]"
               >
                 Soviet
               </button>
@@ -234,7 +236,7 @@ export function Controls({
                     invert: false,
                   })
                 }
-                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+                className="min-h-10 rounded border border-white/10 px-3 py-2 text-[11px] text-white/55 transition-colors active:bg-white/10 hover:border-white/25 hover:text-white/90 sm:min-h-0 sm:px-2 sm:py-1 sm:text-[10px]"
               >
                 Zine
               </button>
@@ -250,7 +252,7 @@ export function Controls({
                     invert: false,
                   })
                 }
-                className="px-2 py-1 border border-white/10 text-[10px] text-white/50 hover:text-white/85 hover:border-white/25"
+                className="min-h-10 rounded border border-white/10 px-3 py-2 text-[11px] text-white/55 transition-colors active:bg-white/10 hover:border-white/25 hover:text-white/90 sm:min-h-0 sm:px-2 sm:py-1 sm:text-[10px]"
               >
                 Ghost
               </button>
@@ -262,19 +264,19 @@ export function Controls({
             <input
               value={halftone.title}
               onChange={(e) => setHt('title', e.target.value)}
-              className="bg-black border border-white/10 px-2 py-1.5 text-white/80 focus:outline-none focus:border-white/25"
+              className="min-h-12 rounded border border-white/10 bg-black px-3 py-3 text-[15px] text-white/85 focus:border-white/30 focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm"
             />
             <label className="text-white/40 text-[10px] uppercase tracking-wide">Subtitle</label>
             <input
               value={halftone.subtitle}
               onChange={(e) => setHt('subtitle', e.target.value)}
-              className="bg-black border border-white/10 px-2 py-1.5 text-white/80 focus:outline-none focus:border-white/25"
+              className="min-h-12 rounded border border-white/10 bg-black px-3 py-3 text-[15px] text-white/85 focus:border-white/30 focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm"
             />
             <label className="text-white/40 text-[10px] uppercase tracking-wide">Date</label>
             <input
               value={halftone.dateLine}
               onChange={(e) => setHt('dateLine', e.target.value)}
-              className="bg-black border border-white/10 px-2 py-1.5 text-white/80 focus:outline-none focus:border-white/25"
+              className="min-h-12 rounded border border-white/10 bg-black px-3 py-3 text-[15px] text-white/85 focus:border-white/30 focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm"
             />
           </div>
 
@@ -293,11 +295,11 @@ export function Controls({
                   invert: false,
                 })
               }
-              className="px-2 py-1 border border-white/10 text-white/50 hover:text-white/80 hover:border-white/25 text-[10px] uppercase tracking-wide"
+              className="min-h-11 rounded border border-white/10 px-4 text-[11px] text-white/55 transition-colors active:bg-white/10 hover:border-white/25 hover:text-white/85 sm:min-h-0 sm:px-2 sm:py-1 sm:text-[10px]"
             >
               Vintage paper
             </button>
-            <button type="button" onClick={onReset} className="ml-auto text-white/30 hover:text-white/60 transition-colors">
+            <button type="button" onClick={onReset} className="ml-auto flex min-h-11 items-center text-[12px] text-white/35 transition-colors active:text-white/50 hover:text-white/60 sm:min-h-0 sm:text-xs">
               ← new image
             </button>
           </div>
@@ -319,7 +321,7 @@ export function Controls({
                   type="button"
                   onClick={() => applyPreset(id)}
                   className={[
-                    'px-2 py-1 rounded border text-[10px] uppercase tracking-wide transition-colors',
+                    'min-h-10 rounded border px-3 py-2 text-[11px] uppercase tracking-wide transition-colors active:bg-white/10 sm:min-h-0 sm:px-2 sm:py-1 sm:text-[10px]',
                     !options.useColor && options.preset === id
                       ? 'border-white/50 text-white/90 bg-white/10'
                       : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/20',
@@ -336,7 +338,7 @@ export function Controls({
             <select
               value={options.shape}
               onChange={(e) => set('shape', e.target.value as RgbDotShape)}
-              className="bg-black border border-white/10 rounded px-2 py-1 text-white/70 cursor-pointer hover:border-white/20 focus:outline-none focus:border-white/30"
+              className="min-h-11 w-full max-w-[12rem] rounded border border-white/10 bg-black px-3 py-2 text-[13px] text-white/75 cursor-pointer hover:border-white/25 focus:outline-none focus:border-white/35 sm:min-h-0 sm:w-auto sm:px-2 sm:py-1 sm:text-xs"
             >
               <option value="circle">Circle</option>
               <option value="square">Square</option>
@@ -349,7 +351,7 @@ export function Controls({
             <Toggle label="Flicker" value={options.flicker} onChange={(v) => set('flicker', v)} />
             <Toggle label="Spin split" value={options.spin} onChange={(v) => set('spin', v)} />
             <Toggle label="CRT" value={options.crt} onChange={(v) => set('crt', v)} />
-            <button type="button" onClick={onReset} className="ml-auto text-white/30 hover:text-white/60 transition-colors">
+            <button type="button" onClick={onReset} className="ml-auto flex min-h-11 items-center text-[12px] text-white/35 transition-colors active:text-white/50 hover:text-white/60 sm:min-h-0 sm:text-xs">
               ← new image
             </button>
           </div>
