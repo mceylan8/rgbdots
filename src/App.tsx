@@ -73,20 +73,28 @@ export default function App() {
 
   const loading = imageSrc !== null && imageData === null
 
+  const canvasShell =
+    'relative flex max-h-[42vh] w-full flex-1 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-zinc-950/40 to-black px-0.5 py-1 md:max-h-none md:min-h-[320px] md:rounded-2xl md:border md:border-white/[0.07] md:px-4 md:py-6 lg:order-2 lg:min-h-0 lg:flex-[1.1] lg:max-w-4xl'
+
+  const panelShell =
+    'mt-0 w-full max-w-xl shrink-0 max-h-[52vh] overflow-y-auto overscroll-y-contain rounded-lg border border-white/10 bg-zinc-950/95 pb-10 shadow-[0_-8px_28px_rgba(0,0,0,0.45)] md:max-h-[min(calc(100dvh-7rem),900px)] md:overflow-y-auto md:rounded-xl md:bg-transparent md:pb-0 md:shadow-none lg:order-1 lg:w-[min(100%,24rem)]'
+
   return (
-    <div className="flex min-h-[100dvh] min-h-screen flex-col bg-black font-mono text-[13px] antialiased sm:text-xs">
-      <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-white/10 bg-black/85 px-safe pt-safe pb-3 backdrop-blur-md sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:py-4">
-        <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start">
-          <span className="shrink-0 text-[10px] tracking-[0.2em] text-white/45 sm:text-xs">
+    <div className="flex min-h-[100dvh] min-h-screen flex-col bg-black font-mono text-[13px] antialiased md:text-xs">
+      <header className="sticky top-0 z-30 flex h-10 w-full shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-black/90 px-3 pt-[max(0.25rem,env(safe-area-inset-top,0px))] backdrop-blur-md md:h-auto md:min-h-0 md:px-6 md:py-4">
+        <div className="flex items-center gap-3 md:gap-4">
+          <span className="shrink-0 text-xs tracking-widest text-white/45 md:tracking-[0.2em]">
             RGB·DOT
           </span>
-          <div className="flex shrink-0 border border-white/20">
+          <div className="flex shrink-0 rounded-sm border border-white/20 font-mono text-xs">
             <button
               type="button"
               onClick={() => setMode('rgb')}
               className={[
-                'min-h-11 min-w-[4.5rem] px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider transition-colors active:bg-white/15 sm:min-h-0 sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px]',
-                mode === 'rgb' ? 'text-white bg-white/10' : 'text-white/35 hover:text-white/55',
+                'px-3 py-1 transition-colors md:min-h-0 md:px-3 md:py-1.5 md:text-[10px] md:uppercase md:tracking-wider',
+                mode === 'rgb'
+                  ? 'bg-white font-medium text-black md:bg-white/10 md:font-medium md:text-white'
+                  : 'bg-transparent text-white/40 md:bg-transparent md:text-white/35 md:hover:text-white/55',
               ].join(' ')}
             >
               RGB
@@ -95,8 +103,10 @@ export default function App() {
               type="button"
               onClick={() => setMode('flow')}
               className={[
-                'min-h-11 min-w-[4.5rem] border-l border-white/20 px-4 py-2.5 text-[11px] font-medium uppercase tracking-wider transition-colors active:bg-white/15 sm:min-h-0 sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px]',
-                mode === 'flow' ? 'text-white bg-white/10' : 'text-white/35 hover:text-white/55',
+                'border-l border-white/20 px-3 py-1 transition-colors md:min-h-0 md:px-3 md:py-1.5 md:text-[10px] md:uppercase md:tracking-wider',
+                mode === 'flow'
+                  ? 'bg-white font-medium text-black md:bg-white/10 md:font-medium md:text-white'
+                  : 'bg-transparent text-white/40 md:bg-transparent md:text-white/35 md:hover:text-white/55',
               ].join(' ')}
             >
               Flow
@@ -104,7 +114,7 @@ export default function App() {
           </div>
         </div>
         {imageData && (
-          <span className="hidden text-[11px] text-white/25 sm:inline sm:text-xs">
+          <span className="hidden text-[11px] text-white/25 md:ml-auto md:inline md:text-xs">
             {mode === 'flow'
               ? 'flow field · save png'
               : halftonePoster
@@ -114,19 +124,19 @@ export default function App() {
         )}
       </header>
 
-      <main className="flex flex-1 min-h-0 flex-col gap-3 px-safe pb-safe pt-2 sm:gap-6 sm:px-6 sm:pb-6 sm:pt-4 lg:flex-row lg:items-stretch lg:justify-center lg:gap-10 lg:px-10 lg:py-6">
+      <main className="flex flex-1 min-h-0 flex-col gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pt-1 md:gap-6 md:px-6 md:pb-6 md:pt-4 lg:flex-row lg:items-stretch lg:justify-center lg:gap-10 lg:px-10 lg:py-6">
         {!imageSrc ? (
-          <div className="flex flex-1 flex-col items-center justify-center py-6 sm:py-10">
+          <div className="flex flex-1 flex-col items-center justify-center py-4 md:py-10">
             <DropZone onImage={handleImage} />
           </div>
         ) : loading ? (
-          <div className="flex flex-1 items-center justify-center py-16">
+          <div className="flex flex-1 items-center justify-center py-10 md:py-16">
             <p className="text-sm text-white/40">Loading…</p>
           </div>
         ) : imageData ? (
           mode === 'flow' ? (
             <>
-              <div className="relative flex min-h-[36dvh] w-full flex-1 items-center justify-center overflow-hidden rounded-xl border border-white/[0.07] bg-gradient-to-b from-zinc-950/40 to-black px-1 py-3 sm:min-h-[320px] sm:rounded-2xl sm:px-4 sm:py-6 lg:order-2 lg:min-h-0 lg:flex-[1.1] lg:max-w-4xl">
+              <div className={canvasShell}>
                 <FlowCanvas
                   imageData={imageData}
                   options={flowOptions}
@@ -138,7 +148,7 @@ export default function App() {
                   }}
                 />
               </div>
-              <div className="mt-0 w-full max-w-xl shrink-0 self-center max-h-[min(46vh,520px)] overflow-y-auto overscroll-y-contain rounded-xl border border-white/10 bg-zinc-950/95 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] sm:max-h-none sm:overflow-visible sm:bg-transparent sm:shadow-none lg:order-1 lg:max-h-[min(calc(100dvh-7rem),900px)] lg:w-[min(100%,24rem)]">
+              <div className={panelShell}>
                 <FlowControls
                   options={flowOptions}
                   onChange={setFlowOptions}
@@ -150,7 +160,7 @@ export default function App() {
             </>
           ) : (
             <>
-              <div className="relative flex min-h-[36dvh] w-full flex-1 items-center justify-center overflow-hidden rounded-xl border border-white/[0.07] bg-gradient-to-b from-zinc-950/40 to-black px-1 py-3 sm:min-h-[320px] sm:rounded-2xl sm:px-4 sm:py-6 lg:order-2 lg:min-h-0 lg:flex-[1.1] lg:max-w-4xl">
+              <div className={canvasShell}>
                 {halftonePoster ? (
                   <HalftoneCanvas
                     imageData={imageData}
@@ -170,7 +180,7 @@ export default function App() {
                   />
                 )}
               </div>
-              <div className="mt-0 w-full max-w-xl shrink-0 self-center max-h-[min(46vh,520px)] overflow-y-auto overscroll-y-contain rounded-xl border border-white/10 bg-zinc-950/95 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] sm:max-h-none sm:overflow-visible sm:bg-transparent sm:shadow-none lg:order-1 lg:max-h-[min(calc(100dvh-7rem),900px)] lg:w-[min(100%,24rem)]">
+              <div className={panelShell}>
                 <Controls
                   options={options}
                   onChange={setOptions}

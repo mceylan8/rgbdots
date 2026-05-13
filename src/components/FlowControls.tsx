@@ -10,6 +10,10 @@ interface Props {
   onResetParticles: () => void
 }
 
+function displaySliderValue(value: number, step: number) {
+  return step < 1 ? Number(value).toFixed(2) : value
+}
+
 function Slider({
   label,
   min,
@@ -25,20 +29,26 @@ function Slider({
   value: number
   onChange: (v: number) => void
 }) {
+  const dv = displaySliderValue(value, step)
   return (
-    <div className="flex min-h-[44px] items-center gap-2 sm:gap-3">
-      <span className="w-24 shrink-0 text-[11px] text-white/45 sm:w-28 sm:text-xs">{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2.5 flex-1 cursor-pointer appearance-none rounded-full bg-white/15 accent-white sm:h-0.5"
-      />
-      <span className="w-11 shrink-0 text-right text-[11px] tabular-nums text-white/55 sm:w-10 sm:text-xs">
-        {step < 1 ? value.toFixed(2) : value}
+    <div className="md:flex md:min-h-[44px] md:w-full md:items-center md:gap-3">
+      <div className="mb-1 flex items-center justify-between md:mb-0 md:block md:w-28 md:flex-shrink-0">
+        <span className="font-mono text-[11px] text-white/40 md:text-xs">{label}</span>
+        <span className="font-mono text-[11px] text-white/50 tabular-nums md:hidden">{dv}</span>
+      </div>
+      <div className="py-2 md:flex-1 md:py-0">
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="h-0.5 w-full cursor-pointer accent-white md:bg-white/20"
+        />
+      </div>
+      <span className="hidden w-10 flex-shrink-0 text-right font-mono text-xs tabular-nums text-white/60 md:block">
+        {dv}
       </span>
     </div>
   )
@@ -54,22 +64,22 @@ function Toggle({
   onChange: (v: boolean) => void
 }) {
   return (
-    <label className="flex min-h-[44px] cursor-pointer select-none items-center gap-2 py-0.5 sm:min-h-0 sm:py-0">
+    <label className="flex cursor-pointer select-none items-center gap-2 md:min-h-[44px]">
       <div
         onClick={() => onChange(!value)}
         className={[
-          'relative h-8 w-9 shrink-0 rounded-full transition-colors sm:h-4 sm:w-8',
-          value ? 'bg-white/70' : 'bg-white/20',
+          'relative h-3.5 w-7 shrink-0 rounded-full transition-colors md:h-4 md:w-8',
+          value ? 'bg-white md:bg-white/70' : 'bg-white/20',
         ].join(' ')}
       >
         <div
           className={[
-            'absolute top-1 h-3.5 w-3.5 rounded-full bg-black transition-transform sm:top-0.5 sm:h-3 sm:w-3',
-            value ? 'translate-x-[1.125rem] sm:translate-x-4' : 'translate-x-1 sm:translate-x-0.5',
+            'absolute top-0.5 h-2.5 w-2.5 rounded-full bg-black transition-transform md:h-3 md:w-3',
+            value ? 'translate-x-3 md:translate-x-4' : 'translate-x-0.5 md:translate-x-0.5',
           ].join(' ')}
         />
       </div>
-      <span className="text-[11px] text-white/50 sm:text-xs">{label}</span>
+      <span className="font-mono text-[11px] text-white/50 md:text-xs">{label}</span>
     </label>
   )
 }
@@ -85,12 +95,12 @@ function ColorSwatch({
 }) {
   const ref = useRef<HTMLInputElement>(null)
   return (
-    <div className="flex min-h-[44px] items-center gap-3">
-      <span className="w-14 shrink-0 text-[11px] text-white/45 sm:text-xs">{label}</span>
+    <div className="flex items-center gap-2 md:min-h-[44px] md:gap-3">
+      <span className="w-12 shrink-0 font-mono text-[11px] text-white/45 md:w-14 md:text-xs">{label}</span>
       <button
         type="button"
         aria-label={label}
-        className="h-11 w-11 shrink-0 border border-white/25 active:scale-95 sm:h-7 sm:w-7"
+        className="h-8 w-8 shrink-0 border border-white/25 active:scale-95 md:h-7 md:w-7"
         style={{ backgroundColor: value }}
         onClick={() => ref.current?.click()}
       />
@@ -111,9 +121,11 @@ export function FlowControls({ options, onChange, onReset, onSavePng, onResetPar
     onChange({ ...options, [key]: val })
   }
 
+  const sec = 'my-2 border-t border-white/10 pt-2 md:my-0 md:border-t md:pt-3'
+
   return (
-    <div className="flex w-full max-w-xl touch-manipulation flex-col gap-4 bg-transparent p-4 pb-5 font-mono text-[13px] sm:text-xs sm:rounded-xl sm:border sm:border-white/10 sm:bg-black sm:p-4 sm:pb-4">
-      <div className="flex flex-col gap-3">
+    <div className="touch-manipulation px-3 pb-2 pt-2 md:flex md:w-full md:max-w-xl md:flex-col md:gap-4 md:rounded-xl md:border md:border-white/10 md:bg-black md:p-4 md:pb-4">
+      <div className="flex flex-col gap-4 md:gap-3">
         <Slider label="Particles" min={500} max={8000} step={100} value={options.count} onChange={(v) => set('count', v)} />
         <Slider label="Speed" min={0.1} max={3} step={0.05} value={options.speed} onChange={(v) => set('speed', v)} />
         <Slider label="Trail α" min={0.01} max={0.15} step={0.005} value={options.trailAlpha} onChange={(v) => set('trailAlpha', v)} />
@@ -121,52 +133,58 @@ export function FlowControls({ options, onChange, onReset, onSavePng, onResetPar
         <Slider label="Flow" min={0} max={2} step={0.05} value={options.flowInfluence} onChange={(v) => set('flowInfluence', v)} />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-3">
+      <div className={`${sec} flex flex-wrap items-center gap-3`}>
         <ColorSwatch label="BG" value={options.bgColor} onChange={(v) => set('bgColor', v)} />
         <ColorSwatch label="Ink" value={options.particleColor} onChange={(v) => set('particleColor', v)} />
       </div>
 
-      <div className="flex flex-wrap gap-1.5 items-center border-t border-white/10 pt-3">
-        <span className="text-white/30 text-[10px] uppercase mr-1">Presets</span>
-        {FLOW_PRESETS.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            title={p.label}
-            onClick={() => onChange({ ...options, bgColor: p.bg, particleColor: p.fg })}
-            className="h-11 w-11 shrink-0 border border-white/20 transition-colors active:scale-95 sm:h-7 sm:w-7"
-            style={{ background: `linear-gradient(135deg, ${p.bg} 50%, ${p.fg} 50%)` }}
-          />
-        ))}
+      <div className={sec}>
+        <span className="mb-1.5 block font-mono text-[10px] uppercase text-white/30 md:mb-0 md:inline">Presets</span>
+        <div className="-mx-1 flex flex-nowrap gap-1.5 overflow-x-auto pb-1 md:mx-0 md:flex-wrap md:overflow-visible">
+          {FLOW_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              title={p.label}
+              aria-label={p.label}
+              onClick={() => onChange({ ...options, bgColor: p.bg, particleColor: p.fg })}
+              className="h-8 w-8 shrink-0 rounded border border-white/20 transition-colors active:scale-95 md:h-7 md:w-7"
+              style={{ background: `linear-gradient(135deg, ${p.bg} 50%, ${p.fg} 50%)` }}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="border-t border-white/10 pt-3 flex flex-wrap gap-4 items-center">
+      <div className={`${sec} flex flex-wrap gap-x-3 gap-y-2`}>
         <Toggle label="Bright mask" value={options.brightnessOnly} onChange={(v) => set('brightnessOnly', v)} />
         <Toggle label="Noise blend" value={options.noiseBlend} onChange={(v) => set('noiseBlend', v)} />
       </div>
 
-      <div className="flex flex-wrap gap-2 border-t border-white/10 pt-3">
-        <button
-          type="button"
-          onClick={onResetParticles}
-          className="min-h-11 min-w-[5.5rem] rounded border border-white/15 px-4 text-[12px] text-white/70 transition-colors active:bg-white/10 hover:border-white/30 hover:text-white sm:min-h-0 sm:min-w-0 sm:px-3 sm:py-1 sm:text-xs"
-        >
-          Reset
-        </button>
+      <div className={`${sec} flex flex-wrap items-center justify-between gap-y-2`}>
         <button
           type="button"
           onClick={onSavePng}
-          className="min-h-11 min-w-[5.5rem] rounded border border-white/15 px-4 text-[12px] text-white/70 transition-colors active:bg-white/10 hover:border-white/30 hover:text-white sm:min-h-0 sm:min-w-0 sm:px-3 sm:py-1 sm:text-xs"
+          className="rounded border border-white/20 px-3 py-1 font-mono text-[11px] text-white/40 transition-colors hover:border-white/35 hover:text-white md:min-h-11 md:min-w-[5.5rem] md:rounded md:border-white/15 md:px-4 md:text-xs md:text-white/70 md:hover:border-white/30"
         >
           Save PNG
         </button>
-        <button
-          type="button"
-          onClick={onReset}
-          className="ml-auto flex min-h-11 items-center text-[12px] text-white/35 transition-colors active:text-white/50 hover:text-white/60 sm:min-h-0 sm:text-xs"
-        >
-          ← new image
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onResetParticles}
+            className="rounded border border-white/20 px-3 py-1 font-mono text-[11px] text-white/40 transition-colors hover:border-white/35 hover:text-white md:min-h-11 md:min-w-[5.5rem] md:rounded md:border-white/15 md:px-4 md:text-xs md:text-white/70 md:hover:border-white/30"
+          >
+            Reset
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="font-mono text-[11px] text-white/35 transition-colors hover:text-white/55 md:text-xs md:text-white/35 md:hover:text-white/60"
+          >
+            <span className="md:hidden">New</span>
+            <span className="hidden md:inline">← new image</span>
+          </button>
+        </div>
       </div>
     </div>
   )

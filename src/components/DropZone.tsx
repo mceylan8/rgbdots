@@ -39,7 +39,7 @@ export function DropZone({ onImage }: Props) {
       onDrop={onDrop}
       onClick={() => inputRef.current?.click()}
       className={[
-        'flex w-full max-w-xl cursor-pointer touch-manipulation flex-col items-center justify-center gap-5 rounded-2xl border px-6 py-12 transition-all duration-200 sm:aspect-video sm:gap-4 sm:py-10',
+        'flex w-full max-w-xl cursor-pointer touch-manipulation flex-col items-center justify-center gap-3 rounded-xl border px-4 py-6 transition-all duration-200 aspect-[3/2] md:aspect-video md:gap-4 md:rounded-2xl md:px-6 md:py-10',
         dragging
           ? 'border-white/50 bg-white/[0.07]'
           : 'border-white/20 bg-white/[0.02] active:bg-white/[0.04] hover:border-white/35 hover:bg-white/[0.04]',
@@ -54,21 +54,21 @@ export function DropZone({ onImage }: Props) {
       />
 
       <svg
-        width="44"
-        height="44"
+        width="32"
+        height="32"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
-        className="text-white/35 sm:h-10 sm:w-10"
+        className="h-8 w-8 text-white/35 md:h-10 md:w-10"
       >
         <path d="M4 16l4-4 4 4 4-6 4 6" />
         <rect x="3" y="3" width="18" height="18" rx="2" />
       </svg>
 
       <div className="text-center">
-        <p className="text-base text-white/75 sm:text-sm">Drop an image or tap to choose</p>
-        <p className="mt-2 text-xs text-white/35 sm:mt-1">PNG · JPG · WebP · GIF</p>
+        <p className="text-sm text-white/75 md:text-sm">Drop an image or tap to choose</p>
+        <p className="mt-1 font-mono text-[11px] text-white/30 md:mt-1 md:text-xs">PNG · JPG · WebP · GIF</p>
       </div>
     </div>
   )
