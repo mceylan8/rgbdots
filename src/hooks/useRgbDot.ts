@@ -11,6 +11,10 @@ export interface RgbDotOptions {
   spin: boolean
   crt: boolean
   threshold: number
+  /** Hell/Dunkel-Trennung (0.5–2.5). */
+  contrast: number
+  /** Farbverstärker — betont bunte Bereiche, nicht nur ein Kanal (0.5–2). */
+  colorBoost: number
   shape: RgbDotShape
   preset: RgbDotPreset
 }
@@ -73,7 +77,47 @@ const SPRING = 0.08
 const MOUSE_SPRING = 0.15
 const REVEAL_MS = 1000
 
-function sampleDots(imgData: ImageData, grid: number, useColor: boolean, threshold: number, preset: RgbDotPreset): SampledDots {
+function clamp255(v: number) {
+  return v < 0 ? 0 : v > 255 ? 255 : v
+}
+
+/**
+ * Kontrast + Farbverstärker vor dem RGB-Split.
+ * Bunte Pixel (hohe Farbintensität) werden stärker angehoben als graue Rauschflächen.
+ */
+function boostPixel(pr: number, pg: number, pb: number, contrast: number, colorBoost: number): [number, number, number] {
+  let r = (pr - 128) * contrast + 128
+  let g = (pg - 128) * contrast + 128
+  let b = (pb - 128) * contrast + 128
+  r = clamp255(r)
+  g = clamp255(g)
+  b = clamp255(b)
+
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const chromaNorm = max > 0 ? (max - min) / max : 0
+
+  // Je bunter das Pixel, desto stärker der Farb-Boost (Rot/Blau der Figur, nicht graues Rauschen)
+  const vividWeight = 0.25 + chromaNorm * 0.75
+  const satFactor = 1 + (colorBoost - 1) * vividWeight
+
+  const gray = 0.299 * r + 0.587 * g + 0.114 * b
+  r = clamp255(gray + (r - gray) * satFactor)
+  g = clamp255(gray + (g - gray) * satFactor)
+  b = clamp255(gray + (b - gray) * satFactor)
+
+  return [r, g, b]
+}
+
+function sampleDots(
+  imgData: ImageData,
+  grid: number,
+  useColor: boolean,
+  threshold: number,
+  contrast: number,
+  colorBoost: number,
+  preset: RgbDotPreset,
+): SampledDots {
   const { width: w, height: h, data: d } = imgData
   const positions: number[] = []
   const colors: number[] = []
@@ -90,7 +134,8 @@ function sampleDots(imgData: ImageData, grid: number, useColor: boolean, thresho
       const pr = d[i],
         pg = d[i + 1],
         pb = d[i + 2]
-      const avg = (pr + pg + pb) / 3
+      const [br, bg, bb] = boostPixel(pr, pg, pb, contrast, colorBoost)
+      const avg = (br + bg + bb) / 3
       if (pa < 30 || avg < thr) continue
 
       const jx = (Math.random() - 0.5) * 2
@@ -99,21 +144,26 @@ function sampleDots(imgData: ImageData, grid: number, useColor: boolean, thresho
       lums.push(avg / 255)
       phases.push(Math.random() * Math.PI * 2)
 
+      const maxC = Math.max(br, bg, bb)
+      const minC = Math.min(br, bg, bb)
+      const chromaNorm = maxC > 0 ? (maxC - minC) / maxC : 0
+      const punch = (35 + colorBoost * 45) * (0.4 + chromaNorm * 0.6)
+
       for (let c = 0; c < 3; c++) {
         let r: number, g: number, b: number
         if (useColor) {
           if (c === 0) {
-            r = Math.min(255, pr + 70)
-            g = Math.max(0, pg - 50)
-            b = Math.max(0, pb - 50)
+            r = Math.min(255, br + punch)
+            g = Math.max(0, bg - punch * 0.7)
+            b = Math.max(0, bb - punch * 0.7)
           } else if (c === 1) {
-            r = Math.max(0, pr - 40)
-            g = Math.min(255, pg + 70)
-            b = Math.max(0, pb - 40)
+            r = Math.max(0, br - punch * 0.55)
+            g = Math.min(255, bg + punch)
+            b = Math.max(0, bb - punch * 0.55)
           } else {
-            r = Math.max(0, pr - 50)
-            g = Math.max(0, pg - 50)
-            b = Math.min(255, pb + 70)
+            r = Math.max(0, br - punch * 0.7)
+            g = Math.max(0, bg - punch * 0.7)
+            b = Math.min(255, bb + punch)
           }
         } else {
           ;[r, g, b] = palette[c]
@@ -326,7 +376,7 @@ export function useRgbDot(options: RgbDotOptions) {
 
     const { data, count, w, h } = dots
     const { split, flicker, grid, shape, crt } = optRef.current
-    const DOTR = grid * 0.34
+    const baseDotR = grid * 0.34
     const a = angleRef.current
     const now = performance.now()
 
@@ -374,11 +424,13 @@ export function useRgbDot(options: RgbDotOptions) {
           const { px, py, rx, ry } = dotDrawPosition(data, base, now, ox, oy)
           const distFromCenter = Math.hypot(rx - w / 2, ry - h / 2) / maxRevealDist
           if (distFromCenter > rp) continue
-          drawDotShape(ctx, px, py, DOTR, shape)
+          const lum = data[base + I_LUM]
+          const dotR = baseDotR * (0.78 + lum * 0.55)
+          drawDotShape(ctx, px, py, dotR, shape)
         }
         ctx.fill()
       } else {
-        const buckets = new Map<string, [number, number][]>()
+        const buckets = new Map<string, [number, number, number][]>()
         for (let i = 0; i < count; i++) {
           if (flicker && Math.random() < 0.13) continue
           const base = i * STRIDE
@@ -389,14 +441,16 @@ export function useRgbDot(options: RgbDotOptions) {
           const g = Math.round(data[base + ci + 1])
           const b = Math.round(data[base + ci + 2])
           const key = `${r},${g},${b}`
+          const lum = data[base + I_LUM]
+          const dotR = baseDotR * (0.78 + lum * 0.55)
           if (!buckets.has(key)) buckets.set(key, [])
-          buckets.get(key)!.push([px, py])
+          buckets.get(key)!.push([px, py, dotR])
         }
         for (const [key, pts] of buckets) {
           ctx.fillStyle = `rgb(${key})`
           ctx.beginPath()
-          for (const [x, y] of pts) {
-            drawDotShape(ctx, x, y, DOTR, shape)
+          for (const [x, y, dotR] of pts) {
+            drawDotShape(ctx, x, y, dotR, shape)
           }
           ctx.fill()
         }
@@ -471,8 +525,8 @@ export function useRgbDot(options: RgbDotOptions) {
   }, [triggerExplosion])
 
   const resample = useCallback((imgData: ImageData) => {
-    const { grid, useColor, threshold, preset } = optRef.current
-    dotsRef.current = sampleDots(imgData, grid, useColor, threshold, preset)
+    const { grid, useColor, threshold, contrast, colorBoost, preset } = optRef.current
+    dotsRef.current = sampleDots(imgData, grid, useColor, threshold, contrast, colorBoost, preset)
     const cv = canvasRef.current
     if (cv) {
       cv.width = dotsRef.current.w
@@ -507,6 +561,8 @@ export function useRgbDot(options: RgbDotOptions) {
         optRef.current.grid,
         optRef.current.useColor,
         optRef.current.threshold,
+        optRef.current.contrast,
+        optRef.current.colorBoost,
         optRef.current.preset,
       )
       revealStartRef.current = performance.now()
@@ -527,6 +583,8 @@ export function useRgbDot(options: RgbDotOptions) {
       optRef.current.grid,
       optRef.current.useColor,
       optRef.current.threshold,
+      optRef.current.contrast,
+      optRef.current.colorBoost,
       optRef.current.preset,
     )
     revealStartRef.current = performance.now()
@@ -537,7 +595,7 @@ export function useRgbDot(options: RgbDotOptions) {
     const imgData = imgDataRef.current
     if (!imgData) return
     resample(imgData)
-  }, [options.grid, options.useColor, options.threshold, options.preset, resample])
+  }, [options.grid, options.useColor, options.threshold, options.contrast, options.colorBoost, options.preset, resample])
 
   const saveAsPng = useCallback(() => {
     const cv = canvasRef.current

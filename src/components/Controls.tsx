@@ -367,6 +367,8 @@ export function Controls({
             <Slider label="Dot grid" min={3} max={10} value={options.grid} onChange={(v) => set('grid', v)} />
             <Slider label="RGB split" min={0} max={14} step={0.5} value={options.split} onChange={(v) => set('split', v)} />
             <Slider label="Threshold" min={0} max={100} value={options.threshold} onChange={(v) => set('threshold', v)} />
+            <Slider label="Contrast" min={0.5} max={2.5} step={0.05} value={options.contrast} onChange={(v) => set('contrast', v)} />
+            <Slider label="Farbverstärker" min={0.5} max={2} step={0.05} value={options.colorBoost} onChange={(v) => set('colorBoost', v)} />
           </div>
 
           <div className={sec}>

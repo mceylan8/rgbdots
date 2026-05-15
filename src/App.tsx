@@ -19,6 +19,8 @@ const DEFAULT: RgbDotOptions = {
   spin: true,
   crt: false,
   threshold: 10,
+  contrast: 1.3,
+  colorBoost: 1.45,
   shape: 'circle',
   preset: 'rgb',
 }
