@@ -83,10 +83,11 @@ export function encodeState(state: ShareableState): string {
     p.set('bright', String(c.brightness))
     p.set('contrast', String(c.contrast))
     p.set('noise', String(c.noise))
-    p.set('vig', String(c.vignette))
+    p.set('glow', String(c.glow))
     p.set('warm', String(c.warmth))
     p.set('flicker', c.flicker ? '1' : '0')
     p.set('roll', c.roll ? '1' : '0')
+    p.set('dots', c.dotMask ? '1' : '0')
   } else if (state.mode === 'ascii') {
     const a = state.ascii
     p.set('grid', String(a.grid))
@@ -154,17 +155,31 @@ export function decodeState(search: string): Partial<ShareableState> {
       noiseBlend: b(q.get('noise'), false),
     }
   } else if (mode === 'crt') {
+    let bleed = n(q.get('bleed'), DEFAULT_CRT.bleed)
+    // Legacy slider was 0–4
+    if (bleed > 1) bleed = Math.min(1, bleed / 4)
+    let curve = n(q.get('curve'), DEFAULT_CRT.curve)
+    if (curve > 0 && curve <= 0.45 && !q.has('glow')) {
+      // Old curve range 0–0.45 → stretch toward new 0–1
+      curve = Math.min(1, curve / 0.45)
+    }
     out.crt = {
-      curve: n(q.get('curve'), DEFAULT_CRT.curve),
+      ...DEFAULT_CRT,
+      curve,
       scanline: n(q.get('scan'), DEFAULT_CRT.scanline),
-      bleed: n(q.get('bleed'), DEFAULT_CRT.bleed),
+      bleed,
       brightness: n(q.get('bright'), DEFAULT_CRT.brightness),
       contrast: n(q.get('contrast'), DEFAULT_CRT.contrast),
-      noise: n(q.get('noise'), DEFAULT_CRT.noise),
-      vignette: n(q.get('vig'), DEFAULT_CRT.vignette),
+      noise: (() => {
+        let v = n(q.get('noise'), DEFAULT_CRT.noise)
+        if (v > 0 && v <= 0.35 && !q.has('glow')) v = Math.min(1, v / 0.35)
+        return v
+      })(),
+      glow: n(q.get('glow'), DEFAULT_CRT.glow),
       warmth: n(q.get('warm'), DEFAULT_CRT.warmth),
       flicker: q.has('flicker') ? b(q.get('flicker'), true) : DEFAULT_CRT.flicker,
       roll: q.has('roll') ? b(q.get('roll'), true) : DEFAULT_CRT.roll,
+      dotMask: q.has('dots') ? b(q.get('dots'), true) : DEFAULT_CRT.dotMask,
     }
   } else if (mode === 'ascii') {
     out.ascii = {

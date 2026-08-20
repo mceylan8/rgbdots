@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function CrtCanvas({ src, options, onSaveReady, onCanvasReady }: Props) {
-  const { wrapRef, imgRef, overlayRef, exportRef, tubeStyle, saveAsPng } = useCrtTv(src, options)
+  const { imgRef, sourceRef, glRef, saveAsPng } = useCrtTv(src, options)
   const saveReadyRef = useRef(onSaveReady)
   saveReadyRef.current = onSaveReady
   const canvasReadyRef = useRef(onCanvasReady)
@@ -20,30 +20,26 @@ export function CrtCanvas({ src, options, onSaveReady, onCanvasReady }: Props) {
   }, [saveAsPng])
 
   useEffect(() => {
-    canvasReadyRef.current?.(exportRef.current)
+    canvasReadyRef.current?.(glRef.current)
     return () => canvasReadyRef.current?.(null)
-  }, [exportRef, src])
+  }, [glRef, src])
 
   return (
-    <div
-      ref={wrapRef}
-      className="relative mx-auto w-full max-w-full overflow-hidden border-0 bg-black md:max-w-5xl md:rounded-2xl md:border md:border-white/10"
-      style={tubeStyle}
-    >
-      {/* Plain <img>, no CSS filter — required for animated GIF playback in Chrome */}
+    <div className="relative mx-auto w-full max-w-full md:max-w-5xl">
+      {/* Off-screen but painted — GIFs won't animate if display:none */}
       <img
         ref={imgRef}
         src={src}
-        alt="CRT"
-        className="relative z-[1] mx-auto block h-auto max-h-[58vh] w-full object-contain md:max-h-[min(85dvh,960px)]"
+        alt=""
+        aria-hidden
+        className="pointer-events-none fixed left-[-9999px] top-0 max-h-none max-w-none"
         draggable={false}
       />
+      <canvas ref={sourceRef} className="hidden" aria-hidden />
       <canvas
-        ref={overlayRef}
-        className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
-        aria-hidden
+        ref={glRef}
+        className="relative z-[1] mx-auto block h-auto max-h-[58vh] w-full rounded-lg bg-black md:max-h-[min(85dvh,960px)] md:rounded-2xl md:border md:border-white/10"
       />
-      <canvas ref={exportRef} className="hidden" aria-hidden />
     </div>
   )
 }

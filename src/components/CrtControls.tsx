@@ -107,23 +107,24 @@ export function CrtControls({
       </div>
 
       <p className="font-mono text-[10px] text-white/30">
-        Works with stills and animated GIFs
+        Own WebGL tube shader · animated GIFs supported
       </p>
 
       <div className="flex flex-col gap-4 md:gap-3">
-        <Slider label="Curve" min={0} max={0.45} step={0.01} value={options.curve} onChange={(v) => set('curve', v)} />
+        <Slider label="Curve" min={0} max={1} step={0.01} value={options.curve} onChange={(v) => set('curve', v)} />
         <Slider label="Scanline" min={0} max={1} step={0.05} value={options.scanline} onChange={(v) => set('scanline', v)} />
-        <Slider label="Bleed" min={0} max={4} step={0.1} value={options.bleed} onChange={(v) => set('bleed', v)} />
-        <Slider label="Bright" min={0.6} max={1.5} step={0.05} value={options.brightness} onChange={(v) => set('brightness', v)} />
+        <Slider label="Bleed" min={0} max={1} step={0.01} value={options.bleed} onChange={(v) => set('bleed', v)} />
+        <Slider label="Glow" min={0} max={1} step={0.05} value={options.glow} onChange={(v) => set('glow', v)} />
+        <Slider label="Bright" min={0.5} max={1.6} step={0.05} value={options.brightness} onChange={(v) => set('brightness', v)} />
         <Slider label="Contrast" min={0.6} max={2} step={0.05} value={options.contrast} onChange={(v) => set('contrast', v)} />
-        <Slider label="Noise" min={0} max={0.35} step={0.01} value={options.noise} onChange={(v) => set('noise', v)} />
-        <Slider label="Vignette" min={0} max={1} step={0.05} value={options.vignette} onChange={(v) => set('vignette', v)} />
+        <Slider label="Noise" min={0} max={1} step={0.05} value={options.noise} onChange={(v) => set('noise', v)} />
         <Slider label="Warmth" min={0} max={0.5} step={0.01} value={options.warmth} onChange={(v) => set('warmth', v)} />
       </div>
 
       <div className={`${sec} flex flex-wrap gap-x-3 gap-y-2`}>
+        <Toggle label="Dot mask" value={options.dotMask} onChange={(v) => set('dotMask', v)} />
         <Toggle label="Flicker" value={options.flicker} onChange={(v) => set('flicker', v)} />
-        <Toggle label="Roll bar" value={options.roll} onChange={(v) => set('roll', v)} />
+        <Toggle label="Signal loss" value={options.roll} onChange={(v) => set('roll', v)} />
       </div>
 
       <PresetLibrary state={shareState} onLoad={onLoadPreset} />
