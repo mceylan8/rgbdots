@@ -129,6 +129,9 @@ export default function App() {
   const canvasShell =
     'relative flex max-h-[42vh] w-full flex-1 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-zinc-950/40 to-black px-0.5 py-1 md:max-h-none md:min-h-[320px] md:rounded-2xl md:border md:border-white/[0.07] md:px-4 md:py-6 lg:order-2 lg:min-h-0 lg:flex-[1.1] lg:max-w-4xl'
 
+  const crtShell =
+    'relative flex max-h-[62vh] w-full flex-1 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-b from-zinc-950/40 to-black px-0.5 py-1 md:max-h-none md:min-h-[420px] md:rounded-2xl md:border md:border-white/[0.07] md:px-4 md:py-6 lg:order-2 lg:min-h-0 lg:flex-[1.6] lg:max-w-6xl'
+
   const panelShell =
     'mt-0 w-full max-w-xl shrink-0 max-h-[52vh] overflow-y-auto overscroll-y-contain rounded-lg border border-white/10 bg-zinc-950/95 pb-10 shadow-[0_-8px_28px_rgba(0,0,0,0.45)] md:max-h-[min(calc(100dvh-7rem),900px)] md:overflow-y-auto md:rounded-xl md:bg-transparent md:pb-0 md:shadow-none lg:order-1 lg:w-[min(100%,24rem)]'
 
@@ -203,7 +206,7 @@ export default function App() {
           </div>
         ) : mode === 'crt' && imageSrc ? (
           <>
-            <div className={canvasShell}>
+            <div className={crtShell}>
               <CrtCanvas
                 src={imageSrc}
                 options={crt}

@@ -1,10 +1,10 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useMemo, type CSSProperties } from 'react'
 
 export interface CrtOptions {
-  /** Barrel curvature 0–0.45 */
+  /** Tube bulge feel 0–0.45 (CSS radius / perspective) */
   curve: number
   scanline: number
-  /** RGB phosphor bleed in px */
+  /** RGB fringe in px */
   bleed: number
   brightness: number
   contrast: number
@@ -30,86 +30,8 @@ export const DEFAULT_CRT: CrtOptions = {
   warmth: 0.12,
 }
 
-const MAX_W = 720
-const MAX_H = 540
-
 function clamp(v: number, a: number, b: number) {
   return v < a ? a : v > b ? b : v
-}
-
-/** Sample source with barrel distortion into dest ImageData. */
-function warpTo(
-  src: ImageData,
-  dest: ImageData,
-  curve: number,
-  brightness: number,
-  contrast: number,
-  warmth: number,
-) {
-  const sw = src.width
-  const sh = src.height
-  const dw = dest.width
-  const dh = dest.height
-  const sd = src.data
-  const dd = dest.data
-  const cx = dw / 2
-  const cy = dh / 2
-  const k = curve * 0.55
-
-  for (let y = 0; y < dh; y++) {
-    for (let x = 0; x < dw; x++) {
-      const nx = (x - cx) / cx
-      const ny = (y - cy) / cy
-      const r2 = nx * nx + ny * ny
-      const f = 1 + k * r2
-      const sx = Math.round(((nx * f + 1) * 0.5) * (sw - 1))
-      const sy = Math.round(((ny * f + 1) * 0.5) * (sh - 1))
-      const di = (y * dw + x) * 4
-
-      if (sx < 0 || sy < 0 || sx >= sw || sy >= sh || r2 > 1.15) {
-        dd[di] = dd[di + 1] = dd[di + 2] = 0
-        dd[di + 3] = 255
-        continue
-      }
-
-      const si = (sy * sw + sx) * 4
-      let r = sd[si]
-      let g = sd[si + 1]
-      let b = sd[si + 2]
-
-      r = (r - 128) * contrast + 128
-      g = (g - 128) * contrast + 128
-      b = (b - 128) * contrast + 128
-      r *= brightness
-      g *= brightness
-      b *= brightness
-      // Warm phosphor bias
-      r = r * (1 + warmth * 0.25) + warmth * 18
-      g = g * (1 + warmth * 0.05)
-      b = b * (1 - warmth * 0.2)
-
-      dd[di] = clamp(r, 0, 255)
-      dd[di + 1] = clamp(g, 0, 255)
-      dd[di + 2] = clamp(b, 0, 255)
-      dd[di + 3] = 255
-    }
-  }
-}
-
-function channelShift(img: ImageData, shift: number) {
-  if (shift < 0.3) return
-  const { width: w, height: h, data } = img
-  const copy = new Uint8ClampedArray(data)
-  const s = Math.round(shift)
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4
-      const xr = clamp(x + s, 0, w - 1)
-      const xb = clamp(x - s, 0, w - 1)
-      data[i] = copy[(y * w + xr) * 4] // R from right
-      data[i + 2] = copy[(y * w + xb) * 4 + 2] // B from left
-    }
-  }
 }
 
 function drawOverlays(
@@ -119,147 +41,192 @@ function drawOverlays(
   o: CrtOptions,
   now: number,
 ) {
-  // Scanlines
+  ctx.clearRect(0, 0, w, h)
+
   if (o.scanline > 0.01) {
-    ctx.fillStyle = `rgba(0,0,0,${0.15 + o.scanline * 0.55})`
+    ctx.fillStyle = `rgba(0,0,0,${0.12 + o.scanline * 0.5})`
     for (let y = 0; y < h; y += 2) {
       ctx.fillRect(0, y, w, 1)
     }
-    // Fine phosphor grill
-    ctx.fillStyle = `rgba(0,0,0,${o.scanline * 0.12})`
+    ctx.fillStyle = `rgba(0,0,0,${o.scanline * 0.1})`
     for (let x = 0; x < w; x += 3) {
       ctx.fillRect(x, 0, 1, h)
     }
   }
 
-  // Rolling bar
   if (o.roll) {
     const barY = ((now * 0.045) % (h + 60)) - 30
     const g = ctx.createLinearGradient(0, barY, 0, barY + 36)
     g.addColorStop(0, 'rgba(180,220,255,0)')
-    g.addColorStop(0.5, 'rgba(200,230,255,0.09)')
+    g.addColorStop(0.5, 'rgba(200,230,255,0.1)')
     g.addColorStop(1, 'rgba(180,220,255,0)')
     ctx.fillStyle = g
     ctx.fillRect(0, barY, w, 36)
   }
 
-  // Noise (cheap speckles — avoid full-buffer read each frame)
   if (o.noise > 0.01) {
     const dots = Math.floor(w * h * o.noise * 0.004)
     for (let i = 0; i < dots; i++) {
       const x = Math.floor(Math.random() * w)
       const y = Math.floor(Math.random() * h)
       const v = Math.random() > 0.5 ? 255 : 0
-      ctx.fillStyle = `rgba(${v},${v},${v},${0.15 + o.noise * 0.35})`
+      ctx.fillStyle = `rgba(${v},${v},${v},${0.12 + o.noise * 0.35})`
       ctx.fillRect(x, y, 1, 1)
     }
   }
 
-  // Flicker
   if (o.flicker) {
     const flick = 0.92 + Math.sin(now * 0.08) * 0.04 + (Math.random() - 0.5) * 0.03
-    ctx.fillStyle = `rgba(0,0,0,${clamp(1 - flick, 0, 0.2)})`
+    ctx.fillStyle = `rgba(0,0,0,${clamp(1 - flick, 0, 0.18)})`
     ctx.fillRect(0, 0, w, h)
   }
 
-  // Vignette + tube edge
   if (o.vignette > 0.01) {
-    const g = ctx.createRadialGradient(w / 2, h / 2, w * 0.15, w / 2, h / 2, Math.hypot(w, h) * 0.55)
+    const g = ctx.createRadialGradient(
+      w / 2,
+      h / 2,
+      w * 0.12,
+      w / 2,
+      h / 2,
+      Math.hypot(w, h) * 0.55,
+    )
     g.addColorStop(0, 'rgba(0,0,0,0)')
-    g.addColorStop(0.65, 'rgba(0,0,0,0)')
-    g.addColorStop(1, `rgba(0,0,0,${0.35 + o.vignette * 0.55})`)
+    g.addColorStop(0.6, 'rgba(0,0,0,0)')
+    g.addColorStop(1, `rgba(0,0,0,${0.3 + o.vignette * 0.55})`)
     ctx.fillStyle = g
     ctx.fillRect(0, 0, w, h)
   }
-
-  // Soft tube mask (rounded dark corners)
-  ctx.strokeStyle = 'rgba(0,0,0,0.85)'
-  ctx.lineWidth = Math.max(8, Math.min(w, h) * 0.04)
-  ctx.strokeRect(2, 2, w - 4, h - 4)
 }
 
+function channelShiftInPlace(img: ImageData, shift: number) {
+  if (shift < 0.3) return
+  const { width: w, height: h, data } = img
+  const copy = new Uint8ClampedArray(data)
+  const s = Math.round(shift)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4
+      const xr = clamp(x + s, 0, w - 1)
+      const xb = clamp(x - s, 0, w - 1)
+      data[i] = copy[(y * w + xr) * 4]
+      data[i + 2] = copy[(y * w + xb) * 4 + 2]
+    }
+  }
+}
+
+export function crtImgFilter(o: CrtOptions): string {
+  const warm = o.warmth
+  const parts = [
+    `brightness(${o.brightness})`,
+    `contrast(${o.contrast})`,
+    `sepia(${warm * 0.35})`,
+    `hue-rotate(${warm * -8}deg)`,
+    `saturate(${1 + warm * 0.15})`,
+  ]
+  if (o.bleed > 0.15) {
+    const b = o.bleed
+    parts.push(
+      `drop-shadow(${b}px 0 0 rgba(255,40,60,0.55))`,
+      `drop-shadow(-${b}px 0 0 rgba(40,100,255,0.5))`,
+    )
+  }
+  return parts.join(' ')
+}
+
+export function crtTubeStyle(o: CrtOptions): CSSProperties {
+  const rx = 12 + o.curve * 42
+  const ry = 10 + o.curve * 34
+  const persp = 900 - o.curve * 400
+  return {
+    borderRadius: `${rx}% / ${ry}%`,
+    transform: o.curve > 0.02 ? `perspective(${persp}px) rotateX(${o.curve * 4}deg)` : undefined,
+  }
+}
+
+/**
+ * CRT shows media as a native <img> so animated GIFs play.
+ * Overlay = scanlines/noise/roll. Export canvas composites the live GIF frame + FX.
+ */
 export function useCrtTv(src: string | null, options: CrtOptions) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+  const overlayRef = useRef<HTMLCanvasElement>(null)
+  const exportRef = useRef<HTMLCanvasElement>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const optRef = useRef(options)
   optRef.current = options
-  const imgRef = useRef<HTMLImageElement | null>(null)
-  const srcBufRef = useRef<HTMLCanvasElement | null>(null)
-  const warpBufRef = useRef<ImageData | null>(null)
   const animRef = useRef(0)
-  const sizeRef = useRef({ w: 0, h: 0 })
 
-  const ensureBuffers = useCallback((iw: number, ih: number) => {
-    const ratio = Math.min(MAX_W / iw, MAX_H / ih, 1)
-    const w = Math.max(1, Math.round(iw * ratio))
-    const h = Math.max(1, Math.round(ih * ratio))
-    if (sizeRef.current.w === w && sizeRef.current.h === h && srcBufRef.current) {
-      return { w, h }
-    }
-    sizeRef.current = { w, h }
-    const srcBuf = document.createElement('canvas')
-    srcBuf.width = w
-    srcBuf.height = h
-    srcBufRef.current = srcBuf
-    warpBufRef.current = new ImageData(w, h)
-    const cv = canvasRef.current
-    if (cv) {
-      cv.width = w
-      cv.height = h
-    }
-    return { w, h }
-  }, [])
-
-  useEffect(() => {
-    if (!src) {
-      imgRef.current = null
-      return
-    }
-    const img = new Image()
-    img.decoding = 'sync'
-    img.src = src
-    imgRef.current = img
-  }, [src])
+  const imgFilter = useMemo(() => crtImgFilter(options), [options])
+  const tubeStyle = useMemo(() => crtTubeStyle(options), [options])
 
   useEffect(() => {
     let last = 0
+
     const loop = (t: number) => {
       animRef.current = requestAnimationFrame(loop)
       if (t - last < 33) return
       last = t
 
-      const cv = canvasRef.current
       const img = imgRef.current
-      if (!cv || !img || !img.complete || img.naturalWidth < 1) return
-      const ctx = cv.getContext('2d', { willReadFrequently: true })
-      if (!ctx) return
+      const overlay = overlayRef.current
+      const exp = exportRef.current
+      const wrap = wrapRef.current
+      if (!img || !overlay || !wrap) return
 
-      const o = optRef.current
-      const { w, h } = ensureBuffers(img.naturalWidth, img.naturalHeight)
-      const srcBuf = srcBufRef.current
-      if (!srcBuf) return
-      const sc = srcBuf.getContext('2d', { willReadFrequently: true })!
-      sc.clearRect(0, 0, w, h)
-      sc.drawImage(img, 0, 0, w, h)
-      const srcData = sc.getImageData(0, 0, w, h)
+      const rect = wrap.getBoundingClientRect()
+      const cssW = Math.max(1, Math.round(rect.width))
+      const cssH = Math.max(1, Math.round(rect.height))
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const w = Math.max(1, Math.round(cssW * dpr))
+      const h = Math.max(1, Math.round(cssH * dpr))
 
-      let warp = warpBufRef.current
-      if (!warp || warp.width !== w || warp.height !== h) {
-        warp = new ImageData(w, h)
-        warpBufRef.current = warp
+      if (overlay.width !== w || overlay.height !== h) {
+        overlay.width = w
+        overlay.height = h
+        overlay.style.width = `${cssW}px`
+        overlay.style.height = `${cssH}px`
       }
 
-      warpTo(srcData, warp, o.curve, o.brightness, o.contrast, o.warmth)
-      channelShift(warp, o.bleed)
-      ctx.putImageData(warp, 0, 0)
-      drawOverlays(ctx, w, h, o, t)
+      const o = optRef.current
+      const octx = overlay.getContext('2d')
+      if (octx) drawOverlays(octx, w, h, o, t)
+
+      if (!exp || !img.complete || img.naturalWidth < 1) return
+
+      const nw = img.naturalWidth
+      const nh = img.naturalHeight
+      const ratio = Math.min(720 / nw, 540 / nh, 1)
+      const ew = Math.max(1, Math.round(nw * ratio))
+      const eh = Math.max(1, Math.round(nh * ratio))
+      if (exp.width !== ew || exp.height !== eh) {
+        exp.width = ew
+        exp.height = eh
+      }
+
+      const ectx = exp.getContext('2d')
+      if (!ectx) return
+
+      ectx.fillStyle = '#000'
+      ectx.fillRect(0, 0, ew, eh)
+      ectx.filter = crtImgFilter({ ...o, bleed: 0 })
+      ectx.drawImage(img, 0, 0, ew, eh)
+      ectx.filter = 'none'
+
+      if (o.bleed > 0.2) {
+        const id = ectx.getImageData(0, 0, ew, eh)
+        channelShiftInPlace(id, o.bleed)
+        ectx.putImageData(id, 0, 0)
+      }
+
+      drawOverlays(ectx, ew, eh, o, t)
     }
 
     animRef.current = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(animRef.current)
-  }, [src, ensureBuffers])
+  }, [src])
 
   const saveAsPng = useCallback(() => {
-    const cv = canvasRef.current
+    const cv = exportRef.current
     if (!cv) return
     const a = document.createElement('a')
     a.href = cv.toDataURL('image/png')
@@ -268,5 +235,13 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
     a.remove()
   }, [])
 
-  return { canvasRef, saveAsPng }
+  return {
+    wrapRef,
+    imgRef,
+    overlayRef,
+    exportRef,
+    imgFilter,
+    tubeStyle,
+    saveAsPng,
+  }
 }

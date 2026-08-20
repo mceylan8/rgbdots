@@ -9,7 +9,10 @@ interface Props {
 }
 
 export function CrtCanvas({ src, options, onSaveReady, onCanvasReady }: Props) {
-  const { canvasRef, saveAsPng } = useCrtTv(src, options)
+  const { wrapRef, imgRef, overlayRef, exportRef, imgFilter, tubeStyle, saveAsPng } = useCrtTv(
+    src,
+    options,
+  )
   const saveReadyRef = useRef(onSaveReady)
   saveReadyRef.current = onSaveReady
   const canvasReadyRef = useRef(onCanvasReady)
@@ -20,15 +23,31 @@ export function CrtCanvas({ src, options, onSaveReady, onCanvasReady }: Props) {
   }, [saveAsPng])
 
   useEffect(() => {
-    canvasReadyRef.current?.(canvasRef.current)
+    canvasReadyRef.current?.(exportRef.current)
     return () => canvasReadyRef.current?.(null)
-  }, [canvasRef, src])
+  }, [exportRef, src])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="mx-auto block h-auto w-full max-h-[42vh] max-w-full rounded-lg border-0 bg-black md:max-h-[min(68dvh,800px)] md:max-w-lg md:rounded-xl md:border md:border-white/10"
-      style={{ imageRendering: 'auto' }}
-    />
+    <div
+      ref={wrapRef}
+      className="relative mx-auto w-full max-w-full overflow-hidden border-0 bg-black md:max-w-5xl md:rounded-2xl md:border md:border-white/10"
+      style={tubeStyle}
+    >
+      {/* Real <img> — browser plays animated GIFs natively */}
+      <img
+        ref={imgRef}
+        src={src}
+        alt="CRT"
+        className="relative z-[1] mx-auto block h-auto max-h-[58vh] w-full object-contain md:max-h-[min(85dvh,960px)]"
+        style={{ filter: imgFilter }}
+        draggable={false}
+      />
+      <canvas
+        ref={overlayRef}
+        className="pointer-events-none absolute inset-0 z-[2] h-full w-full"
+        aria-hidden
+      />
+      <canvas ref={exportRef} className="hidden" aria-hidden />
+    </div>
   )
 }
