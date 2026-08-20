@@ -2,8 +2,9 @@ import { DEFAULT_FLOW, type FlowOptions } from '../hooks/useFlowField'
 import { DEFAULT_HALFTONE, type HalftoneOptions } from '../hooks/useHalftone'
 import type { RgbDotOptions, RgbDotPreset, RgbDotShape } from '../hooks/useRgbDot'
 import { DEFAULT_ASCII, type AsciiOptions } from '../hooks/useAscii'
+import { DEFAULT_CRT, type CrtOptions } from '../hooks/useCrtTv'
 
-export type AppMode = 'rgb' | 'flow' | 'ascii'
+export type AppMode = 'rgb' | 'flow' | 'ascii' | 'crt'
 
 export const DEFAULT_RGB: RgbDotOptions = {
   grid: 5,
@@ -29,6 +30,7 @@ export interface ShareableState {
   flowOptions: FlowOptions
   halftone: HalftoneOptions
   ascii: AsciiOptions
+  crt: CrtOptions
 }
 
 export const DEFAULT_STATE: ShareableState = {
@@ -38,6 +40,7 @@ export const DEFAULT_STATE: ShareableState = {
   flowOptions: { ...DEFAULT_FLOW },
   halftone: { ...DEFAULT_HALFTONE },
   ascii: { ...DEFAULT_ASCII },
+  crt: { ...DEFAULT_CRT },
 }
 
 function b(v: string | null, fallback: boolean) {
@@ -72,6 +75,18 @@ export function encodeState(state: ShareableState): string {
     p.set('ink', f.particleColor.replace('#', ''))
     if (f.brightnessOnly) p.set('bright', '1')
     if (f.noiseBlend) p.set('noise', '1')
+  } else if (state.mode === 'crt') {
+    const c = state.crt
+    p.set('curve', String(c.curve))
+    p.set('scan', String(c.scanline))
+    p.set('bleed', String(c.bleed))
+    p.set('bright', String(c.brightness))
+    p.set('contrast', String(c.contrast))
+    p.set('noise', String(c.noise))
+    p.set('vig', String(c.vignette))
+    p.set('warm', String(c.warmth))
+    p.set('flicker', c.flicker ? '1' : '0')
+    p.set('roll', c.roll ? '1' : '0')
   } else if (state.mode === 'ascii') {
     const a = state.ascii
     p.set('grid', String(a.grid))
@@ -121,7 +136,7 @@ export function decodeState(search: string): Partial<ShareableState> {
   const q = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search)
   if (![...q.keys()].length) return {}
 
-  const mode = s(q.get('mode'), ['rgb', 'flow', 'ascii'] as const, 'rgb')
+  const mode = s(q.get('mode'), ['rgb', 'flow', 'ascii', 'crt'] as const, 'rgb')
   const out: Partial<ShareableState> = { mode }
 
   if (q.has('poster')) out.halftonePoster = b(q.get('poster'), false)
@@ -137,6 +152,19 @@ export function decodeState(search: string): Partial<ShareableState> {
       particleColor: `#${(q.get('ink') || 'e8e0d0').replace(/^#/, '')}`,
       brightnessOnly: b(q.get('bright'), false),
       noiseBlend: b(q.get('noise'), false),
+    }
+  } else if (mode === 'crt') {
+    out.crt = {
+      curve: n(q.get('curve'), DEFAULT_CRT.curve),
+      scanline: n(q.get('scan'), DEFAULT_CRT.scanline),
+      bleed: n(q.get('bleed'), DEFAULT_CRT.bleed),
+      brightness: n(q.get('bright'), DEFAULT_CRT.brightness),
+      contrast: n(q.get('contrast'), DEFAULT_CRT.contrast),
+      noise: n(q.get('noise'), DEFAULT_CRT.noise),
+      vignette: n(q.get('vig'), DEFAULT_CRT.vignette),
+      warmth: n(q.get('warm'), DEFAULT_CRT.warmth),
+      flicker: q.has('flicker') ? b(q.get('flicker'), true) : DEFAULT_CRT.flicker,
+      roll: q.has('roll') ? b(q.get('roll'), true) : DEFAULT_CRT.roll,
     }
   } else if (mode === 'ascii') {
     out.ascii = {

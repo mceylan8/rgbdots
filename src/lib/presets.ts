@@ -66,6 +66,7 @@ export function importPresetsJson(json: string): number {
       flowOptions: { ...DEFAULT_STATE.flowOptions, ...(rec.state.flowOptions || {}) },
       halftone: { ...DEFAULT_STATE.halftone, ...(rec.state.halftone || {}) },
       ascii: { ...DEFAULT_STATE.ascii, ...(rec.state.ascii || {}) },
+      crt: { ...DEFAULT_STATE.crt, ...(rec.state.crt || {}) },
     }
     list.push({
       id: `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,

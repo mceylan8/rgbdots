@@ -184,7 +184,9 @@ export function Controls({
   }
 
   function applyPreset(p: RgbDotPreset) {
-    onChange({ ...options, useColor: false, preset: p })
+    // Fixed palettes need a visible channel offset — otherwise R+G+B stacks to white.
+    const splitForPalette = p === 'mono' ? options.split : Math.max(options.split, 6)
+    onChange({ ...options, useColor: false, preset: p, split: splitForPalette })
   }
 
   const sec = 'my-2 border-t border-white/10 pt-2 md:my-0 md:border-t md:pt-3'
@@ -377,7 +379,9 @@ export function Controls({
           </div>
 
           <div className={sec}>
-            <span className="mb-1.5 block text-[11px] text-white/30 md:mb-0 md:inline md:w-auto">Presets</span>
+            <span className="mb-1.5 block text-[11px] text-white/30 md:mb-0 md:inline md:w-auto">
+              Channel palette
+            </span>
             <div className="-mx-1 flex flex-nowrap gap-1.5 overflow-x-auto pb-1 md:mx-0 md:flex-wrap md:overflow-visible">
               {PRESET_LABELS.map(({ id, label }) => (
                 <button
@@ -412,7 +416,12 @@ export function Controls({
           </div>
 
           <div className={`${sec} flex flex-wrap gap-x-3 gap-y-2`}>
-            <Toggle label="Original colors" shortLabel="Color" value={options.useColor} onChange={(v) => set('useColor', v)} />
+            <Toggle
+              label="Original colors"
+              shortLabel="Color"
+              value={options.useColor}
+              onChange={(v) => set('useColor', v)}
+            />
             <Toggle label="Flicker" value={options.flicker} onChange={(v) => set('flicker', v)} />
             <Toggle label="Spin split" shortLabel="Spin" value={options.spin} onChange={(v) => set('spin', v)} />
             <Toggle label="CRT" value={options.crt} onChange={(v) => set('crt', v)} />

@@ -7,9 +7,12 @@ import { FlowCanvas } from './components/FlowCanvas'
 import { FlowControls } from './components/FlowControls'
 import { AsciiCanvas } from './components/AsciiCanvas'
 import { AsciiControls } from './components/AsciiControls'
+import { CrtCanvas } from './components/CrtCanvas'
+import { CrtControls } from './components/CrtControls'
 import { DEFAULT_HALFTONE, type HalftoneOptions } from './hooks/useHalftone'
 import { DEFAULT_FLOW, type FlowOptions } from './hooks/useFlowField'
 import { DEFAULT_ASCII, type AsciiOptions } from './hooks/useAscii'
+import { DEFAULT_CRT, type CrtOptions } from './hooks/useCrtTv'
 import {
   copyShareUrl,
   decodeState,
@@ -34,6 +37,7 @@ function readInitial(): ShareableState {
     flowOptions: { ...DEFAULT_FLOW, ...(partial.flowOptions || {}) },
     halftone: { ...DEFAULT_HALFTONE, ...(partial.halftone || {}) },
     ascii: { ...DEFAULT_ASCII, ...(partial.ascii || {}) },
+    crt: { ...DEFAULT_CRT, ...(partial.crt || {}) },
   }
 }
 
@@ -47,6 +51,7 @@ export default function App() {
   const [halftonePoster, setHalftonePoster] = useState(initial.halftonePoster)
   const [flowOptions, setFlowOptions] = useState<FlowOptions>(initial.flowOptions)
   const [ascii, setAscii] = useState<AsciiOptions>(initial.ascii)
+  const [crt, setCrt] = useState<CrtOptions>(initial.crt)
   const [linkCopied, setLinkCopied] = useState(false)
 
   const savePngRef = useRef<(() => void) | null>(null)
@@ -54,8 +59,8 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   const shareState: ShareableState = useMemo(
-    () => ({ mode, halftonePoster, options, flowOptions, halftone, ascii }),
-    [mode, halftonePoster, options, flowOptions, halftone, ascii],
+    () => ({ mode, halftonePoster, options, flowOptions, halftone, ascii, crt }),
+    [mode, halftonePoster, options, flowOptions, halftone, ascii, crt],
   )
 
   useEffect(() => {
@@ -69,6 +74,7 @@ export default function App() {
     setFlowOptions({ ...DEFAULT_FLOW, ...s.flowOptions })
     setHalftone({ ...DEFAULT_HALFTONE, ...s.halftone })
     setAscii({ ...DEFAULT_ASCII, ...s.ascii })
+    setCrt({ ...DEFAULT_CRT, ...s.crt })
   }, [])
 
   const handleImage = useCallback((dataUrl: string) => {
@@ -115,7 +121,9 @@ export default function App() {
     }
   }, [shareState])
 
-  const loading = imageSrc !== null && imageData === null
+  // CRT uses src directly (keeps GIF animation); other modes need ImageData
+  const ready = mode === 'crt' ? !!imageSrc : !!imageData
+  const loading = !!imageSrc && !ready
   const getCanvas = useCallback(() => canvasRef.current, [])
 
   const canvasShell =
@@ -128,23 +136,35 @@ export default function App() {
     { id: 'rgb', label: 'RGB' },
     { id: 'flow', label: 'Flow' },
     { id: 'ascii', label: 'ASCII' },
+    { id: 'crt', label: 'CRT' },
   ]
+
+  const hint =
+    mode === 'flow'
+      ? 'flow field'
+      : mode === 'ascii'
+        ? 'glyph'
+        : mode === 'crt'
+          ? 'old tv · gif ok'
+          : halftonePoster
+            ? 'halftone poster'
+            : 'hover · tap to burst'
 
   return (
     <div className="flex min-h-[100dvh] min-h-screen flex-col bg-black font-mono text-[13px] antialiased md:text-xs">
       <header className="sticky top-0 z-30 flex h-10 w-full shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-black/90 px-3 pt-[max(0.25rem,env(safe-area-inset-top,0px))] backdrop-blur-md md:h-auto md:min-h-0 md:px-6 md:py-4">
-        <div className="flex items-center gap-3 md:gap-4">
+        <div className="flex min-w-0 items-center gap-2 md:gap-4">
           <span className="shrink-0 text-xs tracking-widest text-white/45 md:tracking-[0.2em]">
             RGB·DOT
           </span>
-          <div className="flex shrink-0 rounded-sm border border-white/20 font-mono text-xs">
+          <div className="flex max-w-[min(100%,18rem)] shrink overflow-x-auto rounded-sm border border-white/20 font-mono text-xs md:max-w-none">
             {modes.map((m, i) => (
               <button
                 key={m.id}
                 type="button"
                 onClick={() => setMode(m.id)}
                 className={[
-                  'px-2.5 py-1 transition-colors md:min-h-0 md:px-3 md:py-1.5 md:text-[10px] md:uppercase md:tracking-wider',
+                  'shrink-0 px-2 py-1 transition-colors md:min-h-0 md:px-3 md:py-1.5 md:text-[10px] md:uppercase md:tracking-wider',
                   i > 0 ? 'border-l border-white/20' : '',
                   mode === m.id
                     ? 'bg-white font-medium text-black md:bg-white/10 md:font-medium md:text-white'
@@ -164,16 +184,9 @@ export default function App() {
           >
             {linkCopied ? 'Copied' : 'Copy link'}
           </button>
-          {imageData && (
+          {ready && (
             <span className="hidden text-[11px] text-white/25 md:inline md:text-xs">
-              {mode === 'flow'
-                ? 'flow field'
-                : mode === 'ascii'
-                  ? 'glyph'
-                  : halftonePoster
-                    ? 'halftone poster'
-                    : 'hover · tap to burst'}
-              {' · export'}
+              {hint} · export
             </span>
           )}
         </div>
@@ -188,43 +201,95 @@ export default function App() {
           <div className="flex flex-1 items-center justify-center py-10 md:py-16">
             <p className="text-sm text-white/40">Loading…</p>
           </div>
+        ) : mode === 'crt' && imageSrc ? (
+          <>
+            <div className={canvasShell}>
+              <CrtCanvas
+                src={imageSrc}
+                options={crt}
+                onSaveReady={(fn) => {
+                  savePngRef.current = fn
+                }}
+                onCanvasReady={(cv) => {
+                  canvasRef.current = cv
+                }}
+              />
+            </div>
+            <div className={panelShell}>
+              <CrtControls
+                options={crt}
+                onChange={setCrt}
+                shareState={shareState}
+                onLoadPreset={applyShareState}
+                onReset={clearImage}
+                onSavePng={() => savePngRef.current?.()}
+                getCanvas={getCanvas}
+              />
+            </div>
+          </>
+        ) : imageData && mode === 'flow' ? (
+          <>
+            <div className={canvasShell}>
+              <FlowCanvas
+                imageData={imageData}
+                options={flowOptions}
+                onSaveReady={(fn) => {
+                  savePngRef.current = fn
+                }}
+                onResetReady={(fn) => {
+                  flowResetRef.current = fn
+                }}
+                onCanvasReady={(cv) => {
+                  canvasRef.current = cv
+                }}
+              />
+            </div>
+            <div className={panelShell}>
+              <FlowControls
+                options={flowOptions}
+                onChange={setFlowOptions}
+                shareState={shareState}
+                onLoadPreset={applyShareState}
+                onReset={clearImage}
+                onSavePng={() => savePngRef.current?.()}
+                onResetParticles={() => flowResetRef.current?.()}
+                getCanvas={getCanvas}
+              />
+            </div>
+          </>
+        ) : imageData && mode === 'ascii' ? (
+          <>
+            <div className={canvasShell}>
+              <AsciiCanvas
+                imageData={imageData}
+                options={ascii}
+                onSaveReady={(fn) => {
+                  savePngRef.current = fn
+                }}
+                onCanvasReady={(cv) => {
+                  canvasRef.current = cv
+                }}
+              />
+            </div>
+            <div className={panelShell}>
+              <AsciiControls
+                options={ascii}
+                onChange={setAscii}
+                shareState={shareState}
+                onLoadPreset={applyShareState}
+                onReset={clearImage}
+                onSavePng={() => savePngRef.current?.()}
+                getCanvas={getCanvas}
+              />
+            </div>
+          </>
         ) : imageData ? (
-          mode === 'flow' ? (
-            <>
-              <div className={canvasShell}>
-                <FlowCanvas
+          <>
+            <div className={canvasShell}>
+              {halftonePoster ? (
+                <HalftoneCanvas
                   imageData={imageData}
-                  options={flowOptions}
-                  onSaveReady={(fn) => {
-                    savePngRef.current = fn
-                  }}
-                  onResetReady={(fn) => {
-                    flowResetRef.current = fn
-                  }}
-                  onCanvasReady={(cv) => {
-                    canvasRef.current = cv
-                  }}
-                />
-              </div>
-              <div className={panelShell}>
-                <FlowControls
-                  options={flowOptions}
-                  onChange={setFlowOptions}
-                  shareState={shareState}
-                  onLoadPreset={applyShareState}
-                  onReset={clearImage}
-                  onSavePng={() => savePngRef.current?.()}
-                  onResetParticles={() => flowResetRef.current?.()}
-                  getCanvas={getCanvas}
-                />
-              </div>
-            </>
-          ) : mode === 'ascii' ? (
-            <>
-              <div className={canvasShell}>
-                <AsciiCanvas
-                  imageData={imageData}
-                  options={ascii}
+                  options={halftone}
                   onSaveReady={(fn) => {
                     savePngRef.current = fn
                   }}
@@ -232,64 +297,36 @@ export default function App() {
                     canvasRef.current = cv
                   }}
                 />
-              </div>
-              <div className={panelShell}>
-                <AsciiControls
-                  options={ascii}
-                  onChange={setAscii}
-                  shareState={shareState}
-                  onLoadPreset={applyShareState}
-                  onReset={clearImage}
-                  onSavePng={() => savePngRef.current?.()}
-                  getCanvas={getCanvas}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className={canvasShell}>
-                {halftonePoster ? (
-                  <HalftoneCanvas
-                    imageData={imageData}
-                    options={halftone}
-                    onSaveReady={(fn) => {
-                      savePngRef.current = fn
-                    }}
-                    onCanvasReady={(cv) => {
-                      canvasRef.current = cv
-                    }}
-                  />
-                ) : (
-                  <RgbCanvas
-                    src={imageSrc}
-                    imageData={imageData}
-                    options={options}
-                    onSaveReady={(fn) => {
-                      savePngRef.current = fn
-                    }}
-                    onCanvasReady={(cv) => {
-                      canvasRef.current = cv
-                    }}
-                  />
-                )}
-              </div>
-              <div className={panelShell}>
-                <Controls
+              ) : (
+                <RgbCanvas
+                  src={imageSrc}
+                  imageData={imageData}
                   options={options}
-                  onChange={setOptions}
-                  halftonePoster={halftonePoster}
-                  onHalftonePoster={setHalftonePoster}
-                  halftone={halftone}
-                  onHalftoneChange={setHalftone}
-                  shareState={shareState}
-                  onLoadPreset={applyShareState}
-                  onReset={clearImage}
-                  onSavePng={() => savePngRef.current?.()}
-                  getCanvas={getCanvas}
+                  onSaveReady={(fn) => {
+                    savePngRef.current = fn
+                  }}
+                  onCanvasReady={(cv) => {
+                    canvasRef.current = cv
+                  }}
                 />
-              </div>
-            </>
-          )
+              )}
+            </div>
+            <div className={panelShell}>
+              <Controls
+                options={options}
+                onChange={setOptions}
+                halftonePoster={halftonePoster}
+                onHalftonePoster={setHalftonePoster}
+                halftone={halftone}
+                onHalftoneChange={setHalftone}
+                shareState={shareState}
+                onLoadPreset={applyShareState}
+                onReset={clearImage}
+                onSavePng={() => savePngRef.current?.()}
+                getCanvas={getCanvas}
+              />
+            </div>
+          </>
         ) : null}
       </main>
     </div>
