@@ -9,10 +9,13 @@ import { AsciiCanvas } from './components/AsciiCanvas'
 import { AsciiControls } from './components/AsciiControls'
 import { CrtCanvas } from './components/CrtCanvas'
 import { CrtControls } from './components/CrtControls'
+import { Ps1Canvas } from './components/Ps1Canvas'
+import { Ps1Controls } from './components/Ps1Controls'
 import { DEFAULT_HALFTONE, type HalftoneOptions } from './hooks/useHalftone'
 import { DEFAULT_FLOW, type FlowOptions } from './hooks/useFlowField'
 import { DEFAULT_ASCII, type AsciiOptions } from './hooks/useAscii'
 import { DEFAULT_CRT, type CrtOptions } from './hooks/useCrtTv'
+import { DEFAULT_PS1, type Ps1Options } from './hooks/usePs1'
 import {
   copyShareUrl,
   decodeState,
@@ -38,6 +41,7 @@ function readInitial(): ShareableState {
     halftone: { ...DEFAULT_HALFTONE, ...(partial.halftone || {}) },
     ascii: { ...DEFAULT_ASCII, ...(partial.ascii || {}) },
     crt: { ...DEFAULT_CRT, ...(partial.crt || {}) },
+    ps1: { ...DEFAULT_PS1, ...(partial.ps1 || {}) },
   }
 }
 
@@ -52,6 +56,7 @@ export default function App() {
   const [flowOptions, setFlowOptions] = useState<FlowOptions>(initial.flowOptions)
   const [ascii, setAscii] = useState<AsciiOptions>(initial.ascii)
   const [crt, setCrt] = useState<CrtOptions>(initial.crt)
+  const [ps1, setPs1] = useState<Ps1Options>(initial.ps1)
   const [linkCopied, setLinkCopied] = useState(false)
 
   const savePngRef = useRef<(() => void) | null>(null)
@@ -59,8 +64,8 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   const shareState: ShareableState = useMemo(
-    () => ({ mode, halftonePoster, options, flowOptions, halftone, ascii, crt }),
-    [mode, halftonePoster, options, flowOptions, halftone, ascii, crt],
+    () => ({ mode, halftonePoster, options, flowOptions, halftone, ascii, crt, ps1 }),
+    [mode, halftonePoster, options, flowOptions, halftone, ascii, crt, ps1],
   )
 
   useEffect(() => {
@@ -75,6 +80,7 @@ export default function App() {
     setHalftone({ ...DEFAULT_HALFTONE, ...s.halftone })
     setAscii({ ...DEFAULT_ASCII, ...s.ascii })
     setCrt({ ...DEFAULT_CRT, ...s.crt })
+    setPs1({ ...DEFAULT_PS1, ...s.ps1 })
   }, [])
 
   const handleImage = useCallback((url: string) => {
@@ -127,8 +133,8 @@ export default function App() {
     }
   }, [shareState])
 
-  // CRT uses src directly (keeps GIF animation); other modes need ImageData
-  const ready = mode === 'crt' ? !!imageSrc : !!imageData
+  // CRT / PS1 use src + decoded GIF frames; other modes need ImageData
+  const ready = mode === 'crt' || mode === 'ps1' ? !!imageSrc : !!imageData
   const loading = !!imageSrc && !ready
   const getCanvas = useCallback(() => canvasRef.current, [])
 
@@ -146,6 +152,7 @@ export default function App() {
     { id: 'flow', label: 'Flow' },
     { id: 'ascii', label: 'ASCII' },
     { id: 'crt', label: 'CRT' },
+    { id: 'ps1', label: 'PS1' },
   ]
 
   const hint =
@@ -155,9 +162,11 @@ export default function App() {
         ? 'glyph'
         : mode === 'crt'
           ? 'old tv · gif ok'
-          : halftonePoster
-            ? 'halftone poster'
-            : 'hover · tap to burst'
+          : mode === 'ps1'
+            ? 'retro 3d · gif ok'
+            : halftonePoster
+              ? 'halftone poster'
+              : 'hover · tap to burst'
 
   return (
     <div className="flex min-h-[100dvh] min-h-screen flex-col bg-black font-mono text-[13px] antialiased md:text-xs">
@@ -228,6 +237,32 @@ export default function App() {
               <CrtControls
                 options={crt}
                 onChange={setCrt}
+                shareState={shareState}
+                onLoadPreset={applyShareState}
+                onReset={clearImage}
+                onSavePng={() => savePngRef.current?.()}
+                getCanvas={getCanvas}
+              />
+            </div>
+          </>
+        ) : mode === 'ps1' && imageSrc ? (
+          <>
+            <div className={crtShell}>
+              <Ps1Canvas
+                src={imageSrc}
+                options={ps1}
+                onSaveReady={(fn) => {
+                  savePngRef.current = fn
+                }}
+                onCanvasReady={(cv) => {
+                  canvasRef.current = cv
+                }}
+              />
+            </div>
+            <div className={panelShell}>
+              <Ps1Controls
+                options={ps1}
+                onChange={setPs1}
                 shareState={shareState}
                 onLoadPreset={applyShareState}
                 onReset={clearImage}

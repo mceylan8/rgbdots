@@ -3,8 +3,9 @@ import { DEFAULT_HALFTONE, type HalftoneOptions } from '../hooks/useHalftone'
 import type { RgbDotOptions, RgbDotPreset, RgbDotShape } from '../hooks/useRgbDot'
 import { DEFAULT_ASCII, type AsciiOptions } from '../hooks/useAscii'
 import { DEFAULT_CRT, type CrtOptions } from '../hooks/useCrtTv'
+import { DEFAULT_PS1, type Ps1Options } from '../hooks/usePs1'
 
-export type AppMode = 'rgb' | 'flow' | 'ascii' | 'crt'
+export type AppMode = 'rgb' | 'flow' | 'ascii' | 'crt' | 'ps1'
 
 export const DEFAULT_RGB: RgbDotOptions = {
   grid: 5,
@@ -31,6 +32,7 @@ export interface ShareableState {
   halftone: HalftoneOptions
   ascii: AsciiOptions
   crt: CrtOptions
+  ps1: Ps1Options
 }
 
 export const DEFAULT_STATE: ShareableState = {
@@ -41,6 +43,7 @@ export const DEFAULT_STATE: ShareableState = {
   halftone: { ...DEFAULT_HALFTONE },
   ascii: { ...DEFAULT_ASCII },
   crt: { ...DEFAULT_CRT },
+  ps1: { ...DEFAULT_PS1 },
 }
 
 function b(v: string | null, fallback: boolean) {
@@ -88,6 +91,16 @@ export function encodeState(state: ShareableState): string {
     p.set('flicker', c.flicker ? '1' : '0')
     p.set('roll', c.roll ? '1' : '0')
     p.set('dots', c.dotMask ? '1' : '0')
+  } else if (state.mode === 'ps1') {
+    const p1 = state.ps1
+    p.set('res', String(p1.resolution))
+    p.set('depth', String(p1.colorDepth))
+    p.set('dither', String(p1.dither))
+    p.set('wobble', String(p1.wobble))
+    p.set('wspeed', String(p1.wobbleSpeed))
+    p.set('snap', String(p1.snapRate))
+    p.set('fog', String(p1.fogAmount))
+    p.set('fogc', p1.fogColor.replace('#', ''))
   } else if (state.mode === 'ascii') {
     const a = state.ascii
     p.set('grid', String(a.grid))
@@ -137,7 +150,7 @@ export function decodeState(search: string): Partial<ShareableState> {
   const q = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search)
   if (![...q.keys()].length) return {}
 
-  const mode = s(q.get('mode'), ['rgb', 'flow', 'ascii', 'crt'] as const, 'rgb')
+  const mode = s(q.get('mode'), ['rgb', 'flow', 'ascii', 'crt', 'ps1'] as const, 'rgb')
   const out: Partial<ShareableState> = { mode }
 
   if (q.has('poster')) out.halftonePoster = b(q.get('poster'), false)
@@ -180,6 +193,17 @@ export function decodeState(search: string): Partial<ShareableState> {
       flicker: q.has('flicker') ? b(q.get('flicker'), true) : DEFAULT_CRT.flicker,
       roll: q.has('roll') ? b(q.get('roll'), true) : DEFAULT_CRT.roll,
       dotMask: q.has('dots') ? b(q.get('dots'), true) : DEFAULT_CRT.dotMask,
+    }
+  } else if (mode === 'ps1') {
+    out.ps1 = {
+      resolution: n(q.get('res'), DEFAULT_PS1.resolution),
+      colorDepth: n(q.get('depth'), DEFAULT_PS1.colorDepth),
+      dither: n(q.get('dither'), DEFAULT_PS1.dither),
+      wobble: n(q.get('wobble'), DEFAULT_PS1.wobble),
+      wobbleSpeed: n(q.get('wspeed'), DEFAULT_PS1.wobbleSpeed),
+      snapRate: n(q.get('snap'), DEFAULT_PS1.snapRate),
+      fogAmount: n(q.get('fog'), DEFAULT_PS1.fogAmount),
+      fogColor: `#${(q.get('fogc') || DEFAULT_PS1.fogColor.replace('#', '')).replace(/^#/, '')}`,
     }
   } else if (mode === 'ascii') {
     out.ascii = {

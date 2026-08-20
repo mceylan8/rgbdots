@@ -1,15 +1,15 @@
 import { useEffect, useRef } from 'react'
-import { useCrtTv, type CrtOptions } from '../hooks/useCrtTv'
+import { usePs1, type Ps1Options } from '../hooks/usePs1'
 
 interface Props {
   src: string
-  options: CrtOptions
+  options: Ps1Options
   onSaveReady?: (save: () => void) => void
   onCanvasReady?: (canvas: HTMLCanvasElement | null) => void
 }
 
-export function CrtCanvas({ src, options, onSaveReady, onCanvasReady }: Props) {
-  const { sourceRef, glRef, saveAsPng } = useCrtTv(src, options)
+export function Ps1Canvas({ src, options, onSaveReady, onCanvasReady }: Props) {
+  const { sourceRef, glRef, saveAsPng } = usePs1(src, options)
   const saveReadyRef = useRef(onSaveReady)
   saveReadyRef.current = onSaveReady
   const canvasReadyRef = useRef(onCanvasReady)
@@ -29,7 +29,7 @@ export function CrtCanvas({ src, options, onSaveReady, onCanvasReady }: Props) {
       <canvas ref={sourceRef} className="hidden" aria-hidden />
       <canvas
         ref={glRef}
-        className="relative z-[1] mx-auto block h-auto max-h-[58vh] w-full rounded-lg bg-black md:max-h-[min(85dvh,960px)] md:rounded-2xl md:border md:border-white/10"
+        className="relative z-[1] mx-auto block h-auto max-h-[58vh] w-full rounded-lg bg-black [image-rendering:pixelated] md:max-h-[min(85dvh,960px)] md:rounded-2xl md:border md:border-white/10"
       />
     </div>
   )

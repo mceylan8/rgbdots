@@ -1,55 +1,38 @@
 import { useRef, useEffect, useCallback } from 'react'
-import { CrtFilterWebGL, type CrtGlConfig } from '../lib/crtFilterWebGL'
+import { Ps1FilterWebGL, type Ps1GlConfig } from '../lib/ps1FilterWebGL'
 import { loadCrtMedia, type CrtMedia } from '../lib/loadCrtMedia'
 
-export interface CrtOptions {
-  curve: number
-  scanline: number
-  bleed: number
-  brightness: number
-  contrast: number
-  noise: number
-  flicker: boolean
-  roll: boolean
-  glow: number
-  dotMask: boolean
-  warmth: number
+export interface Ps1Options {
+  resolution: number
+  colorDepth: number
+  dither: number
+  wobble: number
+  wobbleSpeed: number
+  snapRate: number
+  fogAmount: number
+  fogColor: string
 }
 
-export const DEFAULT_CRT: CrtOptions = {
-  curve: 0.55,
-  scanline: 0.8,
-  bleed: 0.45,
-  brightness: 1.05,
-  contrast: 1.15,
-  noise: 0.35,
-  flicker: true,
-  roll: true,
-  glow: 0.55,
-  dotMask: true,
-  warmth: 0.12,
+export const DEFAULT_PS1: Ps1Options = {
+  resolution: 160,
+  colorDepth: 20,
+  dither: 0.6,
+  wobble: 0.35,
+  wobbleSpeed: 1.2,
+  snapRate: 8,
+  fogAmount: 0.25,
+  fogColor: '#382e52',
 }
 
 const MAX_W = 960
 const MAX_H = 720
 
-export function optionsToGlConfig(o: CrtOptions): Partial<CrtGlConfig> {
-  return {
-    barrel: 0.04 + o.curve * 0.28,
-    chroma: 0.0006 + o.bleed * 0.007,
-    noise: o.noise * 0.14,
-    tear: o.roll ? 0.0014 : 0.00025,
-    glow: o.glow * 0.4,
-    jitter: o.flicker ? 0.0022 : 0.0005,
-    scanlines: o.scanline > 0.04,
-    scanStrength: o.scanline,
-    phosphor: o.dotMask,
-    brightness: o.brightness * (1 + o.warmth * 0.04),
-    contrast: o.contrast,
-    fade: o.warmth * 0.35,
-    flicker: o.flicker ? 0.04 : 0,
-    syncLoss: o.roll ? 0.09 : 0.02,
-  }
+function hexToRgb01(hex: string): [number, number, number] {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.slice(0, 2), 16) / 255
+  const g = parseInt(h.slice(2, 4), 16) / 255
+  const b = parseInt(h.slice(4, 6), 16) / 255
+  return [r || 0, g || 0, b || 0]
 }
 
 function fitSize(nw: number, nh: number) {
@@ -60,14 +43,25 @@ function fitSize(nw: number, nh: number) {
   }
 }
 
-/**
- * Decodes animated GIFs into frames (gifuct-js) and feeds them into our WebGL CRT.
- * Stills use a normal image draw. No reliance on browser GIF-in-<img> animation.
- */
-export function useCrtTv(src: string | null, options: CrtOptions) {
+export function optionsToGlConfig(o: Ps1Options): Partial<Ps1GlConfig> {
+  return {
+    resX: o.resolution,
+    resY: Math.max(30, Math.round(o.resolution * 0.75)),
+    wobble: o.wobble,
+    wobbleSpeed: o.wobbleSpeed,
+    snapRate: o.snapRate,
+    levels: o.colorDepth,
+    dither: o.dither,
+    fogAmount: o.fogAmount,
+    fogColor: hexToRgb01(o.fogColor),
+  }
+}
+
+/** Same GIF frame pipeline as CRT — decoded frames, not browser <img> animation. */
+export function usePs1(src: string | null, options: Ps1Options) {
   const sourceRef = useRef<HTMLCanvasElement>(null)
   const glRef = useRef<HTMLCanvasElement>(null)
-  const filterRef = useRef<CrtFilterWebGL | null>(null)
+  const filterRef = useRef<Ps1FilterWebGL | null>(null)
   const mediaRef = useRef<CrtMedia | null>(null)
   const frameIndexRef = useRef(0)
   const frameUntilRef = useRef(0)
@@ -81,9 +75,9 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
     const glCanvas = glRef.current
     if (!source || !glCanvas) return
 
-    let filter: CrtFilterWebGL | null = null
+    let filter: Ps1FilterWebGL | null = null
     try {
-      filter = new CrtFilterWebGL(source, glCanvas, optionsToGlConfig(options))
+      filter = new Ps1FilterWebGL(source, glCanvas, optionsToGlConfig(options))
       filterRef.current = filter
     } catch (e) {
       console.error(e)
@@ -106,7 +100,6 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
       mediaRef.current = null
       return
     }
-
     let cancelled = false
     mediaRef.current = null
     frameIndexRef.current = 0
@@ -183,7 +176,7 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
     if (!cv) return
     const a = document.createElement('a')
     a.href = cv.toDataURL('image/png')
-    a.download = 'rgbdot-crt.png'
+    a.download = 'rgbdot-ps1.png'
     a.click()
     a.remove()
   }, [])
