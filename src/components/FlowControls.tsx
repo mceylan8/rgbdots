@@ -1,13 +1,19 @@
 import { useRef } from 'react'
 import { FlowOptions } from '../hooks/useFlowField'
+import type { ShareableState } from '../lib/urlState'
+import { ExportMenu } from './ExportMenu'
 import { FLOW_PRESETS } from './PresetPalettes'
+import { PresetLibrary } from './PresetLibrary'
 
 interface Props {
   options: FlowOptions
   onChange: (o: FlowOptions) => void
+  shareState: ShareableState
+  onLoadPreset: (state: ShareableState) => void
   onReset: () => void
   onSavePng: () => void
   onResetParticles: () => void
+  getCanvas: () => HTMLCanvasElement | null
 }
 
 function displaySliderValue(value: number, step: number) {
@@ -116,7 +122,16 @@ function ColorSwatch({
   )
 }
 
-export function FlowControls({ options, onChange, onReset, onSavePng, onResetParticles }: Props) {
+export function FlowControls({
+  options,
+  onChange,
+  shareState,
+  onLoadPreset,
+  onReset,
+  onSavePng,
+  onResetParticles,
+  getCanvas,
+}: Props) {
   function set<K extends keyof FlowOptions>(key: K, val: FlowOptions[K]) {
     onChange({ ...options, [key]: val })
   }
@@ -160,14 +175,10 @@ export function FlowControls({ options, onChange, onReset, onSavePng, onResetPar
         <Toggle label="Noise blend" value={options.noiseBlend} onChange={(v) => set('noiseBlend', v)} />
       </div>
 
+      <PresetLibrary state={shareState} onLoad={onLoadPreset} />
+
       <div className={`${sec} flex flex-wrap items-center justify-between gap-y-2`}>
-        <button
-          type="button"
-          onClick={onSavePng}
-          className="rounded border border-white/20 px-3 py-1 font-mono text-[11px] text-white/40 transition-colors hover:border-white/35 hover:text-white md:min-h-11 md:min-w-[5.5rem] md:rounded md:border-white/15 md:px-4 md:text-xs md:text-white/70 md:hover:border-white/30"
-        >
-          Save PNG
-        </button>
+        <ExportMenu getCanvas={getCanvas} onSavePng={onSavePng} />
         <div className="flex items-center gap-2">
           <button
             type="button"

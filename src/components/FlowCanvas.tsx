@@ -6,14 +6,17 @@ interface Props {
   options: FlowOptions
   onSaveReady?: (save: () => void) => void
   onResetReady?: (reset: () => void) => void
+  onCanvasReady?: (canvas: HTMLCanvasElement | null) => void
 }
 
-export function FlowCanvas({ imageData, options, onSaveReady, onResetReady }: Props) {
+export function FlowCanvas({ imageData, options, onSaveReady, onResetReady, onCanvasReady }: Props) {
   const { canvasRef, reset, saveAsPng } = useFlowField(imageData, options)
   const saveReadyRef = useRef(onSaveReady)
   saveReadyRef.current = onSaveReady
   const resetReadyRef = useRef(onResetReady)
   resetReadyRef.current = onResetReady
+  const canvasReadyRef = useRef(onCanvasReady)
+  canvasReadyRef.current = onCanvasReady
 
   useEffect(() => {
     saveReadyRef.current?.(saveAsPng)
@@ -22,6 +25,11 @@ export function FlowCanvas({ imageData, options, onSaveReady, onResetReady }: Pr
   useEffect(() => {
     resetReadyRef.current?.(reset)
   }, [reset])
+
+  useEffect(() => {
+    canvasReadyRef.current?.(canvasRef.current)
+    return () => canvasReadyRef.current?.(null)
+  }, [canvasRef, imageData])
 
   return (
     <canvas

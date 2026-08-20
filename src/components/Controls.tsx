@@ -1,6 +1,9 @@
 import { useRef, type CSSProperties } from 'react'
 import { RgbDotOptions, RgbDotPreset, RgbDotShape } from '../hooks/useRgbDot'
 import { HalftoneOptions } from '../hooks/useHalftone'
+import type { ShareableState } from '../lib/urlState'
+import { ExportMenu } from './ExportMenu'
+import { PresetLibrary } from './PresetLibrary'
 
 interface Props {
   options: RgbDotOptions
@@ -9,8 +12,11 @@ interface Props {
   onHalftonePoster: (v: boolean) => void
   halftone: HalftoneOptions
   onHalftoneChange: (h: HalftoneOptions) => void
+  shareState: ShareableState
+  onLoadPreset: (state: ShareableState) => void
   onReset: () => void
   onSavePng: () => void
+  getCanvas: () => HTMLCanvasElement | null
 }
 
 function displaySliderValue(value: number, step: number) {
@@ -163,8 +169,11 @@ export function Controls({
   onHalftonePoster,
   halftone,
   onHalftoneChange,
+  shareState,
+  onLoadPreset,
   onReset,
   onSavePng,
+  getCanvas,
 }: Props) {
   function set<K extends keyof RgbDotOptions>(key: K, val: RgbDotOptions[K]) {
     onChange({ ...options, [key]: val })
@@ -190,13 +199,7 @@ export function Controls({
           onChange={onHalftonePoster}
         />
         <div className="flex items-center justify-end gap-2 md:justify-start">
-          <button
-            type="button"
-            onClick={onSavePng}
-            className="rounded border border-white/20 px-3 py-1 font-mono text-[11px] text-white/40 transition-colors hover:border-white/35 hover:text-white md:text-xs md:text-white/60 md:hover:border-white/25 md:hover:text-white/90"
-          >
-            Save PNG
-          </button>
+          <ExportMenu getCanvas={getCanvas} onSavePng={onSavePng} />
           <button
             type="button"
             onClick={onReset}
@@ -360,6 +363,8 @@ export function Controls({
               ← new image
             </button>
           </div>
+
+          <PresetLibrary state={shareState} onLoad={onLoadPreset} />
         </div>
       ) : (
         <>
@@ -411,10 +416,18 @@ export function Controls({
             <Toggle label="Flicker" value={options.flicker} onChange={(v) => set('flicker', v)} />
             <Toggle label="Spin split" shortLabel="Spin" value={options.spin} onChange={(v) => set('spin', v)} />
             <Toggle label="CRT" value={options.crt} onChange={(v) => set('crt', v)} />
+            <Toggle label="Glitch" value={options.glitch} onChange={(v) => set('glitch', v)} />
+            <Toggle label="Scanline" value={options.scanline} onChange={(v) => set('scanline', v)} />
+            <Toggle label="Parallax" value={options.parallax} onChange={(v) => set('parallax', v)} />
+          </div>
+
+          <PresetLibrary state={shareState} onLoad={onLoadPreset} />
+
+          <div className={`${sec} flex justify-end`}>
             <button
               type="button"
               onClick={onReset}
-              className="ml-auto hidden font-mono text-xs text-white/35 transition-colors hover:text-white/60 md:inline"
+              className="hidden font-mono text-xs text-white/35 transition-colors hover:text-white/60 md:inline"
             >
               ← new image
             </button>

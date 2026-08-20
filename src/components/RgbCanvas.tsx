@@ -6,12 +6,15 @@ interface Props {
   imageData: ImageData | null
   options: RgbDotOptions
   onSaveReady?: (save: () => void) => void
+  onCanvasReady?: (canvas: HTMLCanvasElement | null) => void
 }
 
-export function RgbCanvas({ src, imageData, options, onSaveReady }: Props) {
+export function RgbCanvas({ src, imageData, options, onSaveReady, onCanvasReady }: Props) {
   const { canvasRef, loadImage, loadImageData, saveAsPng } = useRgbDot(options)
   const saveReadyRef = useRef(onSaveReady)
   saveReadyRef.current = onSaveReady
+  const canvasReadyRef = useRef(onCanvasReady)
+  canvasReadyRef.current = onCanvasReady
 
   useEffect(() => {
     if (imageData) {
@@ -24,6 +27,11 @@ export function RgbCanvas({ src, imageData, options, onSaveReady }: Props) {
   useEffect(() => {
     saveReadyRef.current?.(saveAsPng)
   }, [saveAsPng])
+
+  useEffect(() => {
+    canvasReadyRef.current?.(canvasRef.current)
+    return () => canvasReadyRef.current?.(null)
+  }, [canvasRef, imageData])
 
   return (
     <canvas

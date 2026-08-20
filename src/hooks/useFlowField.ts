@@ -181,6 +181,19 @@ export function useFlowField(imageData: ImageData | null, options: FlowOptions) 
     [applyImageData],
   )
 
+  /** Update gradient field without respawning particles. */
+  const updateField = useCallback(
+    (img: ImageData) => {
+      if (img.width !== wRef.current || img.height !== hRef.current || !anglesRef.current) {
+        applyImageData(img)
+        return
+      }
+      anglesRef.current = computeGradients(img)
+      lumRef.current = buildLuminance(img)
+    },
+    [applyImageData],
+  )
+
   const resizeParticles = useCallback(() => {
     const angles = anglesRef.current
     const lum = lumRef.current
@@ -216,8 +229,13 @@ export function useFlowField(imageData: ImageData | null, options: FlowOptions) 
       wRef.current === imageData.width &&
       hRef.current === imageData.height &&
       anglesRef.current !== null
-    if (newBuffer || !sameDims) {
+
+    if (!sameDims) {
       applyImageData(imageData)
+    } else if (newBuffer) {
+      // Same size, new pixels — keep particles, refresh field
+      anglesRef.current = computeGradients(imageData)
+      lumRef.current = buildLuminance(imageData)
     } else {
       resizeParticles()
     }
@@ -338,5 +356,5 @@ export function useFlowField(imageData: ImageData | null, options: FlowOptions) 
     a.remove()
   }, [])
 
-  return { canvasRef, loadImage, reset, saveAsPng }
+  return { canvasRef, loadImage, updateField, reset, saveAsPng }
 }

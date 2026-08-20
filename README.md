@@ -1,6 +1,14 @@
 # RGB Dot
 
-Drop any image, watch it turn into an animated RGB pixel dot effect.
+Drop any image, watch it turn into animated RGB dots, flow fields, or ASCII glyphs.
+
+## Features
+
+- **RGB / Flow / ASCII** modes with live controls
+- **Glitch, scanline, CRT, parallax** overlays
+- **Shareable URLs** — settings sync into the query string (`Copy link`)
+- **Preset library** — save looks locally, import/export JSON
+- **Export** — PNG still, animated WebM / GIF of the effect
 
 ## Dev
 

@@ -10,6 +10,12 @@ export interface RgbDotOptions {
   flicker: boolean
   spin: boolean
   crt: boolean
+  /** Random slice shifts + channel spikes. */
+  glitch: boolean
+  /** Dense rolling scanlines (pairs well with CRT). */
+  scanline: boolean
+  /** Mouse-driven depth offset by luminance. */
+  parallax: boolean
   threshold: number
   /** Hell/Dunkel-Trennung (0.5–2.5). */
   contrast: number
@@ -339,7 +345,52 @@ function drawCrtOverlay(ctx: CanvasRenderingContext2D, w: number, h: number) {
   ctx.fillRect(0, 0, w, h)
 }
 
-function dotDrawPosition(data: Float32Array, base: number, now: number, ox: number, oy: number) {
+function drawScanlineOverlay(ctx: CanvasRenderingContext2D, w: number, h: number, now: number) {
+  ctx.fillStyle = 'rgba(0,0,0,0.32)'
+  for (let y = 0; y < h; y += 3) {
+    ctx.fillRect(0, y, w, 1)
+  }
+  const barY = ((now * 0.09) % (h + 48)) - 24
+  const grad = ctx.createLinearGradient(0, barY, 0, barY + 28)
+  grad.addColorStop(0, 'rgba(255,255,255,0)')
+  grad.addColorStop(0.5, 'rgba(180,220,255,0.07)')
+  grad.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, barY, w, 28)
+}
+
+function applyGlitchPass(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const bands = 2 + Math.floor(Math.random() * 5)
+  for (let i = 0; i < bands; i++) {
+    const y = Math.floor(Math.random() * h)
+    const bh = 2 + Math.floor(Math.random() * 18)
+    const shift = Math.round((Math.random() - 0.5) * 56)
+    try {
+      const slice = ctx.getImageData(0, y, w, Math.min(bh, h - y))
+      ctx.putImageData(slice, shift, y)
+      if (Math.random() < 0.35) {
+        ctx.globalCompositeOperation = 'lighter'
+        ctx.fillStyle =
+          Math.random() < 0.5 ? 'rgba(255,40,60,0.12)' : 'rgba(40,80,255,0.12)'
+        ctx.fillRect(0, y, w, bh)
+        ctx.globalCompositeOperation = 'source-over'
+      }
+    } catch {
+      /* tainted or OOB */
+    }
+  }
+}
+
+function dotDrawPosition(
+  data: Float32Array,
+  base: number,
+  now: number,
+  ox: number,
+  oy: number,
+  parallaxX: number,
+  parallaxY: number,
+  parallaxOn: boolean,
+) {
   const rx = data[base + I_RX]
   const ry = data[base + I_RY]
   const lum = data[base + I_LUM]
@@ -348,8 +399,9 @@ function dotDrawPosition(data: Float32Array, base: number, now: number, ox: numb
     Math.sin(now * 0.001 + ph) * lum * 2.2 + Math.cos(now * 0.00085 + ph * 1.7) * lum * 1.6
   const driftY =
     Math.cos(now * 0.0011 + ph * 0.9) * lum * 2.0 + Math.sin(now * 0.00075 + ph * 2.1) * lum * 1.5
-  const px = rx + driftX + data[base + I_MOX] + data[base + I_EXOX] + ox
-  const py = ry + driftY + data[base + I_MOY] + data[base + I_EXOY] + oy
+  const depth = parallaxOn ? (lum - 0.45) * 18 : 0
+  const px = rx + driftX + data[base + I_MOX] + data[base + I_EXOX] + ox + parallaxX * depth
+  const py = ry + driftY + data[base + I_MOY] + data[base + I_EXOY] + oy + parallaxY * depth
   return { px, py, rx, ry }
 }
 
@@ -375,7 +427,7 @@ export function useRgbDot(options: RgbDotOptions) {
     if (!ctx) return
 
     const { data, count, w, h } = dots
-    const { split, flicker, grid, shape, crt } = optRef.current
+    const { split, flicker, grid, shape, crt, glitch, scanline, parallax } = optRef.current
     const baseDotR = grid * 0.34
     const a = angleRef.current
     const now = performance.now()
@@ -391,6 +443,9 @@ export function useRgbDot(options: RgbDotOptions) {
     const my = mouseRef.current.y
     const mouseOn = mouseRef.current.active
     const rp = revealProgressRef.current
+    const parallaxX = parallax && mouseOn ? (mx - w / 2) / (w / 2) : 0
+    const parallaxY = parallax && mouseOn ? (my - h / 2) / (h / 2) : 0
+    const glitchSplitBoost = glitch && Math.random() < 0.12 ? 1 + Math.random() * 2.2 : 1
 
     for (let i = 0; i < count; i++) {
       updateDotMotion(data, i * STRIDE, w, h, maxRevealDist, rp, mx, my, mouseOn)
@@ -400,8 +455,8 @@ export function useRgbDot(options: RgbDotOptions) {
     ctx.fillRect(0, 0, w, h)
 
     for (let c = 0; c < 3; c++) {
-      const ox = Math.cos(a + CHANNEL_PHASES[c]) * split
-      const oy = Math.sin(a + CHANNEL_PHASES[c]) * split
+      const ox = Math.cos(a + CHANNEL_PHASES[c]) * split * glitchSplitBoost
+      const oy = Math.sin(a + CHANNEL_PHASES[c]) * split * glitchSplitBoost
       const ci = I_COL0 + c * 3
 
       const r0 = data[ci],
@@ -421,7 +476,16 @@ export function useRgbDot(options: RgbDotOptions) {
         for (let i = 0; i < count; i++) {
           if (flicker && Math.random() < 0.13) continue
           const base = i * STRIDE
-          const { px, py, rx, ry } = dotDrawPosition(data, base, now, ox, oy)
+          const { px, py, rx, ry } = dotDrawPosition(
+            data,
+            base,
+            now,
+            ox,
+            oy,
+            parallaxX,
+            parallaxY,
+            parallax,
+          )
           const distFromCenter = Math.hypot(rx - w / 2, ry - h / 2) / maxRevealDist
           if (distFromCenter > rp) continue
           const lum = data[base + I_LUM]
@@ -434,7 +498,16 @@ export function useRgbDot(options: RgbDotOptions) {
         for (let i = 0; i < count; i++) {
           if (flicker && Math.random() < 0.13) continue
           const base = i * STRIDE
-          const { px, py, rx, ry } = dotDrawPosition(data, base, now, ox, oy)
+          const { px, py, rx, ry } = dotDrawPosition(
+            data,
+            base,
+            now,
+            ox,
+            oy,
+            parallaxX,
+            parallaxY,
+            parallax,
+          )
           const distFromCenter = Math.hypot(rx - w / 2, ry - h / 2) / maxRevealDist
           if (distFromCenter > rp) continue
           const r = Math.round(data[base + ci])
@@ -457,6 +530,12 @@ export function useRgbDot(options: RgbDotOptions) {
       }
     }
 
+    if (glitch && Math.random() < 0.28) {
+      applyGlitchPass(ctx, w, h)
+    }
+    if (scanline) {
+      drawScanlineOverlay(ctx, w, h, now)
+    }
     if (crt) {
       drawCrtOverlay(ctx, w, h)
     }
@@ -571,7 +650,7 @@ export function useRgbDot(options: RgbDotOptions) {
     img.src = src
   }, [])
 
-  const loadImageData = useCallback((imgData: ImageData) => {
+  const loadImageData = useCallback((imgData: ImageData, opts?: { silent?: boolean }) => {
     imgDataRef.current = imgData
     const cv = canvasRef.current
     if (cv) {
@@ -587,8 +666,10 @@ export function useRgbDot(options: RgbDotOptions) {
       optRef.current.colorBoost,
       optRef.current.preset,
     )
-    revealStartRef.current = performance.now()
-    revealProgressRef.current = 0
+    if (!opts?.silent) {
+      revealStartRef.current = performance.now()
+      revealProgressRef.current = 0
+    }
   }, [])
 
   useEffect(() => {
