@@ -77,8 +77,11 @@ export default function App() {
     setCrt({ ...DEFAULT_CRT, ...s.crt })
   }, [])
 
-  const handleImage = useCallback((dataUrl: string) => {
-    setImageSrc(dataUrl)
+  const handleImage = useCallback((url: string) => {
+    setImageSrc((prev) => {
+      if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev)
+      return url
+    })
   }, [])
 
   useEffect(() => {
@@ -107,7 +110,10 @@ export default function App() {
   }, [imageSrc])
 
   const clearImage = useCallback(() => {
-    setImageSrc(null)
+    setImageSrc((prev) => {
+      if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev)
+      return null
+    })
     setImageData(null)
   }, [])
 

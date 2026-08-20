@@ -9,10 +9,7 @@ interface Props {
 }
 
 export function CrtCanvas({ src, options, onSaveReady, onCanvasReady }: Props) {
-  const { wrapRef, imgRef, overlayRef, exportRef, imgFilter, tubeStyle, saveAsPng } = useCrtTv(
-    src,
-    options,
-  )
+  const { wrapRef, imgRef, overlayRef, exportRef, tubeStyle, saveAsPng } = useCrtTv(src, options)
   const saveReadyRef = useRef(onSaveReady)
   saveReadyRef.current = onSaveReady
   const canvasReadyRef = useRef(onCanvasReady)
@@ -33,13 +30,12 @@ export function CrtCanvas({ src, options, onSaveReady, onCanvasReady }: Props) {
       className="relative mx-auto w-full max-w-full overflow-hidden border-0 bg-black md:max-w-5xl md:rounded-2xl md:border md:border-white/10"
       style={tubeStyle}
     >
-      {/* Real <img> — browser plays animated GIFs natively */}
+      {/* Plain <img>, no CSS filter — required for animated GIF playback in Chrome */}
       <img
         ref={imgRef}
         src={src}
         alt="CRT"
         className="relative z-[1] mx-auto block h-auto max-h-[58vh] w-full object-contain md:max-h-[min(85dvh,960px)]"
-        style={{ filter: imgFilter }}
         draggable={false}
       />
       <canvas

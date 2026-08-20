@@ -34,14 +34,55 @@ function clamp(v: number, a: number, b: number) {
   return v < a ? a : v > b ? b : v
 }
 
+/** Grade + FX drawn above the native <img> — never CSS-filter the img (kills GIF animation). */
 function drawOverlays(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
   o: CrtOptions,
   now: number,
+  img: HTMLImageElement | null,
 ) {
   ctx.clearRect(0, 0, w, h)
+
+  // RGB bleed: offset copies of the live GIF frame (img must be unfiltered & in DOM)
+  if (img && img.complete && img.naturalWidth > 0 && o.bleed > 0.2) {
+    const s = Math.max(1, o.bleed * (w / Math.max(img.clientWidth || w, 1)))
+    ctx.save()
+    ctx.globalCompositeOperation = 'screen'
+    ctx.globalAlpha = 0.32
+    ctx.drawImage(img, -s, 0, w, h)
+    ctx.globalAlpha = 0.28
+    ctx.drawImage(img, s, 0, w, h)
+    ctx.restore()
+  }
+
+  // Brightness (overlay, not CSS filter)
+  if (o.brightness < 0.98) {
+    ctx.fillStyle = `rgba(0,0,0,${clamp(1 - o.brightness, 0, 0.55)})`
+    ctx.fillRect(0, 0, w, h)
+  } else if (o.brightness > 1.02) {
+    ctx.fillStyle = `rgba(255,255,255,${clamp((o.brightness - 1) * 0.45, 0, 0.35)})`
+    ctx.globalCompositeOperation = 'screen'
+    ctx.fillRect(0, 0, w, h)
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // Contrast approximation
+  if (o.contrast > 1.05) {
+    ctx.fillStyle = `rgba(0,0,0,${clamp((o.contrast - 1) * 0.12, 0, 0.2)})`
+    ctx.globalCompositeOperation = 'soft-light'
+    ctx.fillRect(0, 0, w, h)
+    ctx.globalCompositeOperation = 'source-over'
+  }
+
+  // Warmth
+  if (o.warmth > 0.01) {
+    ctx.fillStyle = `rgba(255, 150, 70,${o.warmth * 0.28})`
+    ctx.globalCompositeOperation = 'soft-light'
+    ctx.fillRect(0, 0, w, h)
+    ctx.globalCompositeOperation = 'source-over'
+  }
 
   if (o.scanline > 0.01) {
     ctx.fillStyle = `rgba(0,0,0,${0.12 + o.scanline * 0.5})`
@@ -114,38 +155,28 @@ function channelShiftInPlace(img: ImageData, shift: number) {
   }
 }
 
-export function crtImgFilter(o: CrtOptions): string {
-  const warm = o.warmth
+function applyCanvasGrade(ctx: CanvasRenderingContext2D, o: CrtOptions) {
   const parts = [
     `brightness(${o.brightness})`,
     `contrast(${o.contrast})`,
-    `sepia(${warm * 0.35})`,
-    `hue-rotate(${warm * -8}deg)`,
-    `saturate(${1 + warm * 0.15})`,
   ]
-  if (o.bleed > 0.15) {
-    const b = o.bleed
-    parts.push(
-      `drop-shadow(${b}px 0 0 rgba(255,40,60,0.55))`,
-      `drop-shadow(-${b}px 0 0 rgba(40,100,255,0.5))`,
-    )
+  if (o.warmth > 0.01) {
+    parts.push(`sepia(${o.warmth * 0.35})`, `hue-rotate(${o.warmth * -8}deg)`)
   }
-  return parts.join(' ')
+  ctx.filter = parts.join(' ')
 }
 
 export function crtTubeStyle(o: CrtOptions): CSSProperties {
-  const rx = 12 + o.curve * 42
-  const ry = 10 + o.curve * 34
-  const persp = 900 - o.curve * 400
+  const rx = 10 + o.curve * 28
+  const ry = 8 + o.curve * 22
   return {
     borderRadius: `${rx}% / ${ry}%`,
-    transform: o.curve > 0.02 ? `perspective(${persp}px) rotateX(${o.curve * 4}deg)` : undefined,
   }
 }
 
 /**
- * CRT shows media as a native <img> so animated GIFs play.
- * Overlay = scanlines/noise/roll. Export canvas composites the live GIF frame + FX.
+ * Visible media is a plain <img> (no CSS filter) so animated GIFs play.
+ * All CRT look is painted on the overlay canvas above it.
  */
 export function useCrtTv(src: string | null, options: CrtOptions) {
   const imgRef = useRef<HTMLImageElement>(null)
@@ -156,7 +187,6 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
   optRef.current = options
   const animRef = useRef(0)
 
-  const imgFilter = useMemo(() => crtImgFilter(options), [options])
   const tubeStyle = useMemo(() => crtTubeStyle(options), [options])
 
   useEffect(() => {
@@ -189,7 +219,7 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
 
       const o = optRef.current
       const octx = overlay.getContext('2d')
-      if (octx) drawOverlays(octx, w, h, o, t)
+      if (octx) drawOverlays(octx, w, h, o, t, img)
 
       if (!exp || !img.complete || img.naturalWidth < 1) return
 
@@ -208,7 +238,7 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
 
       ectx.fillStyle = '#000'
       ectx.fillRect(0, 0, ew, eh)
-      ectx.filter = crtImgFilter({ ...o, bleed: 0 })
+      applyCanvasGrade(ectx, o)
       ectx.drawImage(img, 0, 0, ew, eh)
       ectx.filter = 'none'
 
@@ -218,7 +248,7 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
         ectx.putImageData(id, 0, 0)
       }
 
-      drawOverlays(ectx, ew, eh, o, t)
+      drawOverlays(ectx, ew, eh, o, t, null)
     }
 
     animRef.current = requestAnimationFrame(loop)
@@ -240,7 +270,6 @@ export function useCrtTv(src: string | null, options: CrtOptions) {
     imgRef,
     overlayRef,
     exportRef,
-    imgFilter,
     tubeStyle,
     saveAsPng,
   }

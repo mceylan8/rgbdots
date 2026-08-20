@@ -10,9 +10,9 @@ export function DropZone({ onImage }: Props) {
 
   function read(file: File) {
     if (!file.type.startsWith('image/')) return
-    const reader = new FileReader()
-    reader.onload = (e) => onImage(e.target!.result as string)
-    reader.readAsDataURL(file)
+    // Object URLs keep GIF animation more reliably than data-URLs
+    const url = URL.createObjectURL(file)
+    onImage(url)
   }
 
   function onDragOver(e: DragEvent) {
@@ -48,7 +48,7 @@ export function DropZone({ onImage }: Props) {
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/gif,image/png,image/jpeg,image/webp,image/*"
         className="hidden"
         onChange={onChange}
       />
@@ -69,7 +69,7 @@ export function DropZone({ onImage }: Props) {
       <div className="text-center">
         <p className="text-sm text-white/75 md:text-sm">Drop an image or GIF</p>
         <p className="mt-1 font-mono text-[11px] text-white/30 md:mt-1 md:text-xs">
-          PNG · JPG · WebP · GIF (animated OK in CRT)
+          PNG · JPG · WebP · GIF (animated in CRT)
         </p>
       </div>
     </div>
